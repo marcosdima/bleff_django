@@ -10,7 +10,7 @@ class Word(models.Model):
 
 class Language(models.Model):
     tag = models.CharField(max_length=3, primary_key=True, validators=[MinLengthValidator(1)])
-    name = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=20, unique=True, validators=[MinLengthValidator(4)])
 
 
 class Meaning(models.Model):
