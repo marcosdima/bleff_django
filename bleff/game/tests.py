@@ -66,3 +66,27 @@ class LanguageModelTest(TestCase):
         language = Language(tag='', name='')
         with self.assertRaises(ValidationError):
             language.full_clean()         
+
+
+    def test_create_a_language_with_invalid_tag(self):
+        '''
+            Create a new language with an invalid tag.
+        '''
+        tag = ''
+        name = 'English'
+        language = Language.objects.create(tag=tag, name=name)
+
+        with self.assertRaises(ValidationError):
+                    language.full_clean()         
+
+
+    def test_create_a_language_with_invalid_name(self):
+        '''
+            Create a new language with an invalid name.
+        '''
+        tag = 'EN'
+        name = 'EN'
+        language = Language.objects.create(tag=tag, name=name)
+
+        with self.assertRaises(ValidationError):
+                    language.full_clean()      
