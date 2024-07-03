@@ -1,0 +1,27 @@
+Meaning:
+	- Meaning-Word must be unique, even if a word can have several meanings, you must choose one.
+	- PK is Language.Tag-ID_Word.
+
+
+Vote: 
+	- If any GUESS.Is_Correct is NULL, then no USER must vote.
+	- An USER can vote just ONE GUESS by HAND.
+	- A GUESS.Is_Correct is equal to TRUE, then must not be voted.
+	- If USER is not from GAME, then mustn't vote a GUESS from that GAME.
+	- If USER's GUESS.Is_Correct is equal to TRUE, then they mustn't vote.
+	
+
+Guess:
+	- Pk is (ID_Guess - User.ID - Hand.ID_Hand)
+	- 'Is_Original' and 'Is_From_Leader' default value is FALSE.
+	- 'Is_Correct' should only be setted by Leader. 
+	
+
+Hand:
+	- 'Started_At' default value is 'now'.
+	- 'Winner' should be the GUESS most voted writer.
+	
+	
+GAME:
+	- Winner is the USER with most 'points' (Each vote and winning hand corresponds 1pt and 2pts, respectively)
+	- 'Words_Played' is a collection of the 'ID_Word' played.
