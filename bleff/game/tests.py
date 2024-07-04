@@ -159,6 +159,18 @@ class MeaningModelTest(TestCase):
            meaning.full_clean()
 
 
+    def create_a_meaning_with_content_field_as_an_empty_string(self):
+        '''
+            Create a new meaning with empty strings as content.
+        '''
+        word = 'House'
+        content = ''
+        meaning = create_basic_meaning(word_translation=word, content=content)
+
+        with self.assertRaises(ValidationError):
+           meaning.full_clean()
+
+
     def test_str_function(self):
         word = 'House'
         content = 'A place where you live.'
