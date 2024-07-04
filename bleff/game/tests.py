@@ -3,6 +3,12 @@ from django.test import TestCase
 
 from .models import Word, Language, Meaning
 
+def create_basic_meaning(word_translation: str, content: str):
+    word = Word(word=word_translation)
+    language = Language(tag='En', name='English')
+    return Meaning(text=content, word_translation=word_translation, word=word.id, language=language)
+
+
 class WordModelTest(TestCase):
     def test_create_a_word(self):
         '''
@@ -46,6 +52,12 @@ class WordModelTest(TestCase):
         secondWord = Word(word=text)
         with self.assertRaises(ValidationError):
             secondWord.full_clean()
+
+
+    def test_str_function(self):
+        text = 'House'
+        word = Word.objects.create(word=text)
+        self.assertEqual(text, word.__str__(), 'Str function does not works!')
 
 
 class LanguageModelTest(TestCase):
@@ -117,3 +129,29 @@ class LanguageModelTest(TestCase):
         secondLanguage = Language(tag=tag, name=name)
         with self.assertRaises(ValidationError):
             secondLanguage.full_clean()
+
+
+    def test_str_function(self):
+        tag = 'EN'
+        name = 'English'
+        language = Language.objects.create(tag=tag, name=name)
+        self.assertEqual(f'{tag}-{name}', language.__str__(), 'Str function does not works!')
+
+
+class MeaningModelTest(TestCase):
+    def create_a_meaning(self):
+        word = 'House'
+        content = 'A place where you live.'
+        meaning = create_basic_meaning(word_translation=word, content=content)
+
+        try:
+            meaning.full_clean() 
+        except ValidationError:
+            self.fail("Valid Meaning raised ValidationError")
+
+
+    def test_str_function(self):
+        word = 'House'
+        content = 'A place where you live.'
+        meaning = create_basic_meaning(word_translation=word, content=content)
+        self.assertEqual(f'{word}: {content}', meaning.__str__(), 'Str function does not works!')
