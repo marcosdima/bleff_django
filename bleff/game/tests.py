@@ -1,12 +1,14 @@
 from django.forms import ValidationError
+from django.db.utils import IntegrityError
 from django.test import TestCase
 
 from .models import Word, Language, Meaning
 
 def create_basic_meaning(word_translation: str, content: str):
-    word = Word(word=word_translation)
-    language = Language(tag='En', name='English')
-    return Meaning(text=content, word_translation=word_translation, word=word.id, language=language)
+    word = Word.objects.create(word='AnyWord')
+    language = Language.objects.create(tag='En', name='English')
+
+    return Meaning.objects.create(text=content, word_translation=word_translation, word=word, language=language)
 
 
 class WordModelTest(TestCase):
@@ -27,7 +29,7 @@ class WordModelTest(TestCase):
         '''
             Create a word with an empty string as word.
         '''
-        word = Word(word='')
+        word = Word.objects.create(word='')
         with self.assertRaises(ValidationError):
             word.full_clean()
 
@@ -36,7 +38,7 @@ class WordModelTest(TestCase):
         '''
             Create a word with no values passed.
         '''
-        word = Word()
+        word = Word.objects.create()
         with self.assertRaises(ValidationError):
             word.full_clean()
             
@@ -46,12 +48,10 @@ class WordModelTest(TestCase):
             Tries to duplicate a word.
         '''
         text = 'House'
-        firstWord = Word(word=text)
-        firstWord.save()
+        Word.objects.create(word=text)
 
-        secondWord = Word(word=text)
-        with self.assertRaises(ValidationError):
-            secondWord.full_clean()
+        with self.assertRaises(IntegrityError):
+            Word.objects.create(word=text)
 
 
     def test_str_function(self):
@@ -79,7 +79,7 @@ class LanguageModelTest(TestCase):
         '''
             Create a new language with empty strings as values.
         '''
-        language = Language(tag='', name='')
+        language = Language.objects.create(tag='', name='')
         with self.assertRaises(ValidationError):
             language.full_clean()
 
@@ -88,7 +88,7 @@ class LanguageModelTest(TestCase):
         '''
             Create a word with no values passed.
         '''
-        language = Language(tag='', name='')
+        language = Language.objects.create(tag='', name='')
         with self.assertRaises(ValidationError):
             language.full_clean()         
 
@@ -123,13 +123,10 @@ class LanguageModelTest(TestCase):
         '''
         tag = 'EN'
         name = 'English'
-        firstLanguage = Language(tag=tag, name=name)
-        firstLanguage.save()
+        Language.objects.create(tag=tag, name=name)
 
-        secondLanguage = Language(tag=tag, name=name)
-        with self.assertRaises(ValidationError):
-            secondLanguage.full_clean()
-
+        with self.assertRaises(IntegrityError):
+            Language.objects.create(tag=tag, name=name)
 
     def test_str_function(self):
         tag = 'EN'
@@ -148,6 +145,18 @@ class MeaningModelTest(TestCase):
             meaning.full_clean() 
         except ValidationError:
             self.fail("Valid Meaning raised ValidationError")
+
+
+    def create_a_meaning_with_word_translation_field_as_an_empty_string(self):
+        '''
+            Create a new meaning with empty strings as word_translation.
+        '''
+        word = ''
+        content = 'A place where you live.'
+        meaning = create_basic_meaning(word_translation=word, content=content)
+
+        with self.assertRaises(ValidationError):
+           meaning.full_clean()
 
 
     def test_str_function(self):
