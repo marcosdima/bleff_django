@@ -17,8 +17,8 @@ class Language(models.Model):
 
 
 class Meaning(models.Model):
-    text = models.CharField(max_length=200)
-    word_translation = models.CharField(max_length=40)
+    text = models.CharField(max_length=200, validators=[MinLengthValidator(10)])
+    word_translation = models.CharField(max_length=40, validators=[MinLengthValidator(3)])
     word = models.ForeignKey(Word, on_delete=models.CASCADE)
     language = models.ForeignKey(Language, on_delete=models.CASCADE)
 
