@@ -35,6 +35,19 @@ class WordModelTest(TestCase):
             word.full_clean()
             
 
+    def test_create_a_word_that_already_exists(self):
+        '''
+            Tries to duplicate a word.
+        '''
+        text = 'House'
+        firstWord = Word(word=text)
+        firstWord.save()
+
+        secondWord = Word(word=text)
+        with self.assertRaises(ValidationError):
+            secondWord.full_clean()
+
+
 class LanguageModelTest(TestCase):
     def test_create_a_language(self):
         '''
@@ -89,4 +102,18 @@ class LanguageModelTest(TestCase):
         language = Language.objects.create(tag=tag, name=name)
 
         with self.assertRaises(ValidationError):
-                    language.full_clean()      
+                    language.full_clean()
+
+
+    def test_create_a_language_that_already_exists(self):
+        '''
+            Tries to duplicate a language.
+        '''
+        tag = 'EN'
+        name = 'English'
+        firstLanguage = Language(tag=tag, name=name)
+        firstLanguage.save()
+
+        secondLanguage = Language(tag=tag, name=name)
+        with self.assertRaises(ValidationError):
+            secondLanguage.full_clean()
