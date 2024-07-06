@@ -201,11 +201,27 @@ class GameModelTest(TestCase):
         try:
             game.full_clean()
         except ValidationError:
+            self.fail("Valid Game raised ValidationError")
+
+
+    def test_create_a_game_with_creator_as_none(self):
+        game = Game.objects.create(idiom=self.lang, creator=None)
+
+        try:
+            game.full_clean()
+        except ValidationError:
             self.fail("Valid Meaning raised ValidationError")
+
+
+    def test_create_a_game_with_no_language(self):
+        with self.assertRaises(IntegrityError):
+           Game.objects.create(idiom=None, creator=self.user)
+
 
     def test_game_str_function(self):
         game = Game.objects.create(idiom=self.lang, creator=self.user)
         self.assertEqual(f'Game {game.id}: created by {self.user.username}', game.__str__(), 'Str function does not works!')
+
 
     def test_game_str_function_with_none_as_creator(self):
         game = Game.objects.create(idiom=self.lang, creator=None)
