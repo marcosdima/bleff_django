@@ -48,3 +48,11 @@ class Game(models.Model):
 class Play(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['game', 'user'], name='user_can_play_this_game_only_one_time')
+        ]
+
+    def __str__(self):
+        return f'User {self.user.username} plays/ed Game nro°{self.game.id}'
