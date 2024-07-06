@@ -1,14 +1,25 @@
 from django.forms import ValidationError
 from django.db.utils import IntegrityError
 from django.test import TestCase
+from django.contrib.auth.models import User
 
-from .models import Word, Language, Meaning
+from .models import Word, Language, Meaning, Game
 
 def create_basic_meaning(word_translation: str, content: str):
     word = Word.objects.create(word='AnyWord')
     language = Language.objects.create(tag='En', name='English')
 
     return Meaning.objects.create(text=content, word_translation=word_translation, word=word, language=language)
+
+
+def create_basic_user():
+    return User.objects.create_user(username="root_test", password="password")
+
+
+def create_basic_language():
+    tag = 'EN'
+    name = 'English'
+    return Language.objects.create(tag=tag, name=name)
 
 
 class WordModelTest(TestCase):
@@ -54,7 +65,7 @@ class WordModelTest(TestCase):
             Word.objects.create(word=text)
 
 
-    def test_str_function(self):
+    def test_word_str_function(self):
         text = 'House'
         word = Word.objects.create(word=text)
         self.assertEqual(text, word.__str__(), 'Str function does not works!')
@@ -128,7 +139,7 @@ class LanguageModelTest(TestCase):
         with self.assertRaises(IntegrityError):
             Language.objects.create(tag=tag, name=name)
 
-    def test_str_function(self):
+    def test_language_str_function(self):
         tag = 'EN'
         name = 'English'
         language = Language.objects.create(tag=tag, name=name)
@@ -137,7 +148,6 @@ class LanguageModelTest(TestCase):
 
 class MeaningModelTest(TestCase):
     def test_create_a_meaning(self):
-        print('asdasd')
         word = 'House'
         content = 'A place where you live.'
         meaning = create_basic_meaning(word_translation=word, content=content)
@@ -172,8 +182,32 @@ class MeaningModelTest(TestCase):
            meaning.full_clean()
 
 
-    def test_str_function(self):
+    def test_meaning_str_function(self):
         word = 'House'
         content = 'A place where you live.'
         meaning = create_basic_meaning(word_translation=word, content=content)
         self.assertEqual(f'{word}: {content}', meaning.__str__(), 'Str function does not works!')
+
+
+class GameModelTest(TestCase):
+    def setUp(self):
+        self.user = create_basic_user()
+        self.lang = create_basic_language()
+
+
+    def test_create_a_game(self):
+        game = Game.objects.create(idiom=self.lang, creator=self.user)
+
+        try:
+            game.full_clean()
+        except ValidationError:
+            self.fail("Valid Meaning raised ValidationError")
+
+    def test_game_str_function(self):
+        game = Game.objects.create(idiom=self.lang, creator=self.user)
+        self.assertEqual(f'Game {game.id}: created by {self.user.username}', game.__str__(), 'Str function does not works!')
+
+    def test_game_str_function_with_none_as_creator(self):
+        game = Game.objects.create(idiom=self.lang, creator=None)
+        self.assertEqual(f'Game {game.id}: created by SECRET', game.__str__(), 'Str function does not works!')
+
