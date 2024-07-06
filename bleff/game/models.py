@@ -33,7 +33,7 @@ class Game(models.Model):
     # TODO: a function to determinate who wins (winner) and another one to gets the words played (words_played). 
     started_at = models.DateTimeField(default=timezone.now)
     idiom = models.ForeignKey(Language, on_delete=models.PROTECT)
-    creator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    creator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f'Game {self.id}: created by {self.creator.username if self.creator else "SECRET"}'
