@@ -136,7 +136,8 @@ class LanguageModelTest(TestCase):
 
 
 class MeaningModelTest(TestCase):
-    def create_a_meaning(self):
+    def test_create_a_meaning(self):
+        print('asdasd')
         word = 'House'
         content = 'A place where you live.'
         meaning = create_basic_meaning(word_translation=word, content=content)
@@ -147,7 +148,7 @@ class MeaningModelTest(TestCase):
             self.fail("Valid Meaning raised ValidationError")
 
 
-    def create_a_meaning_with_word_translation_field_as_an_empty_string(self):
+    def test_create_a_meaning_with_word_translation_field_as_an_empty_string(self):
         '''
             Create a new meaning with empty strings as word_translation.
         '''
@@ -159,7 +160,7 @@ class MeaningModelTest(TestCase):
            meaning.full_clean()
 
 
-    def create_a_meaning_with_content_field_as_an_empty_string(self):
+    def test_create_a_meaning_with_content_field_as_an_empty_string(self):
         '''
             Create a new meaning with empty strings as content.
         '''
