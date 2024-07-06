@@ -3,7 +3,7 @@ from django.db.utils import IntegrityError
 from django.test import TestCase
 from django.contrib.auth.models import User
 
-from .models import Word, Language, Meaning, Game
+from .models import Word, Language, Meaning, Game, Play
 
 def create_basic_meaning(word_translation: str, content: str):
     word = Word.objects.create(word='AnyWord')
@@ -206,6 +206,9 @@ class GameModelTest(TestCase):
 
 
     def test_create_a_game(self):
+        '''
+            Tries to create a game.
+        '''
         game = Game.objects.create(idiom=self.lang, creator=self.user)
 
         try:
@@ -215,6 +218,9 @@ class GameModelTest(TestCase):
 
 
     def test_create_a_game_with_creator_as_none(self):
+        '''
+            Tries to create a game with creator as none.
+        '''
         game = Game.objects.create(idiom=self.lang, creator=None)
 
         try:
@@ -224,6 +230,9 @@ class GameModelTest(TestCase):
 
 
     def test_create_a_game_with_no_language(self):
+        '''
+            Tries to create a game with language as none.
+        '''        
         with self.assertRaises(IntegrityError):
            Game.objects.create(idiom=None, creator=self.user)
 
@@ -237,3 +246,22 @@ class GameModelTest(TestCase):
         game = Game.objects.create(idiom=self.lang, creator=None)
         self.assertEqual(f'Game {game.id}: created by SECRET', game.__str__(), 'Str function does not works!')
 
+
+class PlayModelTest(TestCase):
+    def setUp(self):
+        self.user = create_basic_user()
+        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.lang = create_basic_language()
+        self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+
+
+    def test_create_a_play_instance(self):
+        '''
+            Creates a play instance of secondary player and self.game.
+        '''
+        play = Play.objects.create(game=self.game, user=self.secondaryUser)
+
+        try:
+            play.full_clean()
+        except ValidationError:
+            self.fail("Valid Play raised ValidationError")
