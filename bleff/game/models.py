@@ -25,6 +25,12 @@ class Meaning(models.Model):
     word = models.ForeignKey(Word, on_delete=models.CASCADE)
     language = models.ForeignKey(Language, on_delete=models.CASCADE)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['word', 'language'], name='unique_word_language_combination')
+        ]
+
+
     def __str__(self):
         return f'{self.word_translation}: {self.text}'
 
@@ -38,3 +44,7 @@ class Game(models.Model):
     def __str__(self):
         return f'Game {self.id}: created by {self.creator.username if self.creator else "SECRET"}'
     
+
+class Play(models.Model):
+    game = models.ForeignKey(Game, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
