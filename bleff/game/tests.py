@@ -182,6 +182,16 @@ class MeaningModelTest(TestCase):
            meaning.full_clean()
 
 
+    def test_create_a_meaning_duplicated(self):
+        word = Word.objects.create(word='House')
+        lang = Language.objects.create(tag='En', name='English')
+        content = 'A place where you live.'
+        Meaning.objects.create(text=content, word_translation='House', word=word, language=lang)
+        
+        with self.assertRaises(IntegrityError):
+           Meaning.objects.create(text=content, word_translation='House', word=word, language=lang)
+
+
     def test_meaning_str_function(self):
         word = 'House'
         content = 'A place where you live.'
