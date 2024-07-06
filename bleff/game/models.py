@@ -1,5 +1,8 @@
 from django.core.validators import MinLengthValidator
+from django.utils import timezone
+from django.contrib.auth.models import User
 from django.db import models
+
 
 class Word(models.Model):
     word = models.CharField(max_length=40, unique=True, validators=[MinLengthValidator(3)])
@@ -24,3 +27,14 @@ class Meaning(models.Model):
 
     def __str__(self):
         return f'{self.word_translation}: {self.text}'
+
+
+class Game(models.Model):
+    # TODO: a function to determinate who wins (winner) and another one to gets the words played (words_played). 
+    started_at = models.DateTimeField(default=timezone.now)
+    idiom = models.ForeignKey(Language, on_delete=models.PROTECT)
+    creator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return f'Game {self.id}: created by {self.creator.username if self.creator else "SECRET"}'
+    
