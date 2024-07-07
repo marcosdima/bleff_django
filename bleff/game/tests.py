@@ -269,6 +269,15 @@ class PlayModelTest(TestCase):
 
     def test_create_a_play_of_a_player_that_already_plays(self):
         '''
+            Tries to create a duplicated play instance.
+        '''
+        Play.objects.create(game=self.game, user=self.secondaryUser)
+        with self.assertRaises(IntegrityError):
+           Play.objects.create(game=self.game, user=self.secondaryUser)
+
+
+    def test_create_a_play_of_a_player_that_already_plays_beacuse_they_created_the_game(self):
+        '''
             Tries to create a play instance of self.user and self.game, but self.user created the game so their instance of 'play' should already be created,
             triggering an IntegrityError.
         '''
