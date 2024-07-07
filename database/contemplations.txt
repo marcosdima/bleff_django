@@ -4,24 +4,31 @@ Meaning:
 
 
 Vote: 
-	- If any GUESS.Is_Correct is NULL, then no USER must vote.
+	- If any Hand-Guess.Is_Correct is NULL, then no USER must vote.
 	- An USER can vote just ONE GUESS by HAND.
 	- A GUESS.Is_Correct is equal to TRUE, then must not be voted.
 	- If USER is not from GAME, then mustn't vote a GUESS from that GAME.
-	- If USER's GUESS.Is_Correct is equal to TRUE, then they mustn't vote.
+	- If USER's Guess in Hand-Guess 'Is_Correct' is equal to TRUE, then they mustn't vote.
 	
 
 Guess:
 	- Pk is (ID_Guess - User.ID - Hand.ID_Hand)
-	- 'Is_Original' and 'Is_From_Leader' default value is FALSE.
-	- 'Is_Correct' should only be setted by Leader. 
+	- 'Is_Original' default value is FALSE.
+	- An User that does not play Game, mustn't create a Guess for it.
+	- If Hand was finished, then Guess' to that Hand mustn't be created.
 	
 
 Hand:
 	- 'Started_At' default value is 'now'.
 	- 'Winner' should be the GUESS most voted writer.
+	- A new Game Hand mustn't be created if exists a previus Hand unfinished. 
 	
 	
 GAME:
 	- Winner is the USER with most 'points' (Each vote and winning hand corresponds 1pt and 2pts, respectively)
 	- 'Words_Played' is a collection of the 'ID_Word' played.
+
+
+Agregation Hand-Guess:
+	- Each time a Guess it's created, a row of Hand-Guess must be created too.
+	- 'Is_Correct' should only be setted by Leader.
