@@ -1,5 +1,6 @@
 from django.core.validators import MinLengthValidator
 from django.utils import timezone
+from django.forms import ValidationError
 from django.contrib.auth.models import User
 from django.db import models
 
@@ -56,3 +57,14 @@ class Play(models.Model):
 
     def __str__(self):
         return f'User {self.user.username} plays/ed Game nro°{self.game.id}'
+    
+
+class Hand(models.Model):
+    # TODO: a function to determinate who is the hand winner (winner)
+    started_at = models.DateTimeField(default=timezone.now)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    leader = models.ForeignKey(User, on_delete=models.PROTECT) # TODO: Maybe SET_NULL could work.
+    game = models.ForeignKey(Game, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'Hand {self.id}'
