@@ -265,3 +265,12 @@ class PlayModelTest(TestCase):
             play.full_clean()
         except ValidationError:
             self.fail("Valid Play raised ValidationError")
+
+
+    def test_create_a_play_of_a_player_that_already_plays(self):
+        '''
+            Tries to create a play instance of self.user and self.game, but self.user created the game so their instance of 'play' should already be created,
+            triggering an IntegrityError.
+        '''
+        with self.assertRaises(IntegrityError):
+           Play.objects.create(game=self.game, user=self.user)
