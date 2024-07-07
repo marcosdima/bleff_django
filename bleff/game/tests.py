@@ -3,7 +3,7 @@ from django.db.utils import IntegrityError
 from django.test import TestCase
 from django.contrib.auth.models import User
 
-from .models import Word, Language, Meaning, Game, Play
+from .models import Word, Language, Meaning, Game, Play, Hand
 
 def create_basic_meaning(word_translation: str, content: str):
     word = Word.objects.create(word='AnyWord')
@@ -283,3 +283,23 @@ class PlayModelTest(TestCase):
         '''
         with self.assertRaises(IntegrityError):
            Play.objects.create(game=self.game, user=self.user)
+
+
+class HandModelTest(TestCase):
+    def setUp(self):
+        self.user = create_basic_user()
+        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.lang = create_basic_language()
+        self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+
+
+    def test_create_a_new_hand(self):
+        try:
+            Hand.objects.create(game=self.game, leader=self.user)
+        except ValidationError or IntegrityError:
+            self.fail("Valid Hand raised an error")
+
+    
+    def test_create_a_new_hand(self):
+        with self.assertRaises(ValidationError):
+            Hand.objects.create(game=self.game, leader=self.secondaryUser)
