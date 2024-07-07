@@ -300,6 +300,6 @@ class HandModelTest(TestCase):
             self.fail("Valid Hand raised an error")
 
     
-    def test_create_a_new_hand(self):
+    def test_create_a_new_hand_with_an_outsider_as_leader(self):
         with self.assertRaises(ValidationError):
             Hand.objects.create(game=self.game, leader=self.secondaryUser)
