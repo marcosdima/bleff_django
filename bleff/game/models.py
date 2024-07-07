@@ -66,5 +66,11 @@ class Hand(models.Model):
     leader = models.ForeignKey(User, on_delete=models.PROTECT) # TODO: Maybe SET_NULL could work.
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
 
+
+    def save(self, *args, **kwargs):
+        if not Play.objects.filter(game=self.game, user=self.leader).exists():
+            raise ValidationError("Leader can't be an User that does not belong")
+
+
     def __str__(self):
         return f'Hand {self.id}'
