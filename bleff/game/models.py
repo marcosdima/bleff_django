@@ -68,7 +68,7 @@ class Hand(models.Model):
 
 
     def save(self, *args, **kwargs):
-        if not Play.objects.filter(game=self.game, user=self.leader).exists():
+        if hasattr(self, 'leader') and hasattr(self, 'game') and not Play.objects.filter(game=self.game, user=self.leader).exists():
             raise ValidationError("Leader can't be an User that does not belong")
 
 
