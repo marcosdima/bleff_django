@@ -294,12 +294,33 @@ class HandModelTest(TestCase):
 
 
     def test_create_a_new_hand(self):
+        '''
+            Create a new hand with valid data.
+        '''
         try:
             Hand.objects.create(game=self.game, leader=self.user)
         except ValidationError or IntegrityError:
             self.fail("Valid Hand raised an error")
 
+
+    def test_create_a_new_hand_with_no_leader(self):
+        '''
+            Create a new hand without valid data (missing leader).
+        '''
+        with self.assertRaises(ValidationError):
+            hand = Hand.objects.create(game=self.game)
+            hand.full_clean()
+
     
+    def test_create_a_new_hand_with_no_game(self):
+        '''
+            Create a new hand without valid data (missing game).
+        '''
+        with self.assertRaises(ValidationError):
+            hand = Hand.objects.create(leader=self.user)
+            hand.full_clean()
+
+
     def test_create_a_new_hand_with_an_outsider_as_leader(self):
         with self.assertRaises(ValidationError):
             Hand.objects.create(game=self.game, leader=self.secondaryUser)
