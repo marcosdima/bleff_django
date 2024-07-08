@@ -71,6 +71,8 @@ class Hand(models.Model):
     def save(self, *args, **kwargs):
         if hasattr(self, 'leader') and hasattr(self, 'game') and not Play.objects.filter(game=self.game, user=self.leader).exists():
             raise ValidationError("Leader can't be an User that does not belong")
+        elif hasattr(self, 'word') and hasattr(self, 'game') and not Meaning.objects.filter(word=self.word, language=self.game.idiom):
+            raise ValidationError("Word must have a Meaning in Game idiom")
 
 
     def __str__(self):
