@@ -65,6 +65,7 @@ class Hand(models.Model):
     finished_at = models.DateTimeField(null=True, blank=True)
     leader = models.ForeignKey(User, on_delete=models.PROTECT) # TODO: Maybe SET_NULL could work.
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
+    word = models.ForeignKey(Word, on_delete=models.PROTECT)
 
 
     def save(self, *args, **kwargs):
@@ -74,3 +75,5 @@ class Hand(models.Model):
 
     def __str__(self):
         return f'Hand {self.id}'
+    
+
