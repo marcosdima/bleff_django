@@ -291,6 +291,8 @@ class HandModelTest(TestCase):
         self.secondaryUser = User.objects.create_user(username='second', password='1234')
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+        self.word = Word.objects.create(word='House')
+        self.meaning = Meaning.objects.create(text='An explanation of what it is in English.', language=self.lang, word=self.word, word_translation='HoUsE')
 
 
     def test_create_a_new_hand(self):
@@ -298,7 +300,7 @@ class HandModelTest(TestCase):
             Create a new hand with valid data.
         '''
         try:
-            Hand.objects.create(game=self.game, leader=self.user)
+            Hand.objects.create(game=self.game, leader=self.user, word=self.word)
         except ValidationError or IntegrityError:
             self.fail("Valid Hand raised an error")
 
@@ -308,7 +310,7 @@ class HandModelTest(TestCase):
             Create a new hand without valid data (missing leader).
         '''
         with self.assertRaises(ValidationError):
-            hand = Hand.objects.create(game=self.game)
+            hand = Hand.objects.create(game=self.game, word=self.word)
             hand.full_clean()
 
     
@@ -317,10 +319,30 @@ class HandModelTest(TestCase):
             Create a new hand without valid data (missing game).
         '''
         with self.assertRaises(ValidationError):
-            hand = Hand.objects.create(leader=self.user)
+            hand = Hand.objects.create(leader=self.user, word=self.word)
             hand.full_clean()
 
 
+    def test_create_a_new_hand_with_no_word(self):
+        '''
+            Create a new hand without valid data (missing word).
+        '''
+        with self.assertRaises(ValidationError):
+            hand = Hand.objects.create(leader=self.user, game=self.game)
+            hand.full_clean()
+
+
+    def test_create_a_new_hand_with_no_meaning(self):
+        '''
+            Create a new hand with a word with no meaning in the Game idiom.
+        '''
+        with self.assertRaises(ValidationError):
+            Hand.objects.create(leader=self.user, game=self.game, word=Word.objects.create(word='AnyWord'))
+
+
     def test_create_a_new_hand_with_an_outsider_as_leader(self):
+        '''
+            Create a new hand with a leader that does not belong to Game.
+        '''
         with self.assertRaises(ValidationError):
             Hand.objects.create(game=self.game, leader=self.secondaryUser)
