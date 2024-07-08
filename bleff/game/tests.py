@@ -332,7 +332,7 @@ class HandModelTest(TestCase):
             hand.full_clean()
 
 
-    def test_create_a_new_hand_with_no_meaning(self):
+    def test_create_a_new_hand_with_a_word_without_meaning(self):
         '''
             Create a new hand with a word with no meaning in the Game idiom.
         '''
