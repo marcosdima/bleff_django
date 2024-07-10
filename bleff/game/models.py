@@ -50,10 +50,12 @@ class Play(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
+
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['game', 'user'], name='user_can_play_this_game_only_one_time')
         ]
+
 
     def __str__(self):
         return f'User {self.user.username} plays/ed Game nro°{self.game.id}'
@@ -73,9 +75,27 @@ class Hand(models.Model):
             raise ValidationError("Leader can't be an User that does not belong")
         elif hasattr(self, 'word') and hasattr(self, 'game') and not Meaning.objects.filter(word=self.word, language=self.game.idiom):
             raise ValidationError("Word must have a Meaning in Game idiom")
+        super().save(*args, **kwargs)
 
 
     def __str__(self):
         return f'Hand {self.id}'
     
 
+class Guess(models.Model):
+    content = models.CharField(max_length=200, validators=[MinLengthValidator(1)])
+    started_at = models.DateTimeField(default=timezone.now)
+    is_original = models.BooleanField(default=False)
+    hand = models.ForeignKey(Hand, on_delete=models.CASCADE)
+    writer = models.ForeignKey(User, on_delete=models.CASCADE)
+    
+
+    def save(self, *args, **kwargs):
+        if hasattr(self, 'hand') and Guess.objects.filter(hand=self.hand, is_original=True).exists():
+            raise ValidationError('Just can exists one "is_original" Guess')
+        
+        super().save(*args, **kwargs)
+
+
+    def __str__(self):
+        return f'Guess by {self.writer.username}'
