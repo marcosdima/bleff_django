@@ -84,7 +84,7 @@ class Hand(models.Model):
 
 class Guess(models.Model):
     content = models.CharField(max_length=200, validators=[MinLengthValidator(1)])
-    started_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(default=timezone.now)
     is_original = models.BooleanField(default=False)
     hand = models.ForeignKey(Hand, on_delete=models.CASCADE)
     writer = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
