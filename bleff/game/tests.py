@@ -3,7 +3,7 @@ from django.db.utils import IntegrityError
 from django.test import TestCase
 from django.contrib.auth.models import User
 
-from .models import Word, Language, Meaning, Game, Play, Hand
+from .models import Word, Language, Meaning, Game, Play, Hand, Guess
 
 def create_basic_meaning(word_translation: str, content: str):
     word = Word.objects.create(word='AnyWord')
@@ -346,3 +346,41 @@ class HandModelTest(TestCase):
         '''
         with self.assertRaises(ValidationError):
             Hand.objects.create(game=self.game, leader=self.secondaryUser)
+
+
+class GuessModelTest(TestCase):
+    def setUp(self):
+        self.user = create_basic_user()
+        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.lang = create_basic_language()
+        self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+        self.word = Word.objects.create(word='House')
+        self.meaning = Meaning.objects.create(text='An explanation of what it is in English.', language=self.lang, word=self.word, word_translation='HoUsE')
+        self.hand = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
+        self.content = 'A guess of a Hand, LOL.'
+
+
+    def test_create_a_guess(self):
+        '''
+            Create a valid Guess.
+        '''
+        try:
+            Guess.objects.create(hand=self.hand, content=self.content, writer=self.user)
+        except ValidationError or IntegrityError:
+            self.fail('A Valid Guess creation raised an error')
+
+    
+    def test_create_a_guess_with_no_hand(self):
+        '''
+            Raises an error because Guess has no hand.
+        '''
+        with self.assertRaises(IntegrityError):
+            Guess.objects.create(content=self.content)
+
+
+    def test_create_a_guess_with_no_content(self):
+        '''
+            Raises an error because Guess has no content.
+        '''
+        with self.assertRaises(IntegrityError):
+            Guess.objects.create(hand=self.hand)
