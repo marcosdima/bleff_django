@@ -392,10 +392,7 @@ class GuessModelTest(TestCase):
             Raises an error because Guess has no writer.
         '''
         with self.assertRaises(ValidationError):
-            g = Guess.objects.create(hand=self.hand, content=self.content)
-            g.full_clean()
-            for gg in Guess.objects.all():
-                print(gg.hand, gg.writer)
+            Guess.objects.create(hand=self.hand, content=self.content)
 
 
     def test_create_a_guess_after_create_hand(self):
@@ -406,3 +403,20 @@ class GuessModelTest(TestCase):
         right = Guess.objects.filter(hand=self.hand)[0]
         self.assertEqual(True, right != None)
         self.assertEqual(True, right.is_original)
+
+
+    def test_create_a_guess_with_is_original_as_true(self):
+        '''
+            The only guess that can be the 'original', is the one created by default after a Hand is created.
+        '''
+        with self.assertRaises(ValidationError):
+            Guess.objects.create(hand=self.hand, content=self.content, writer=self.user, is_original=True)
+
+
+    
+    def test_a_guess_writer_can_be_none_just_in_is_the_original_case(self):
+        '''
+            The only Guess that accepts writer as None is the first one, the right one.
+        '''
+        with self.assertRaises(ValidationError):
+            Guess.objects.create(hand=self.hand, content=self.content, writer=None)
