@@ -375,12 +375,34 @@ class GuessModelTest(TestCase):
             Raises an error because Guess has no hand.
         '''
         with self.assertRaises(IntegrityError):
-            Guess.objects.create(content=self.content)
+            Guess.objects.create(content=self.content, writer=self.user)
 
 
     def test_create_a_guess_with_no_content(self):
         '''
             Raises an error because Guess has no content.
         '''
-        with self.assertRaises(IntegrityError):
-            Guess.objects.create(hand=self.hand)
+        with self.assertRaises(ValidationError):
+            g = Guess.objects.create(hand=self.hand, writer=self.user)
+            g.full_clean()
+
+
+    def test_create_a_guess_with_no_writer(self):
+        '''
+            Raises an error because Guess has no writer.
+        '''
+        with self.assertRaises(ValidationError):
+            g = Guess.objects.create(hand=self.hand, content=self.content)
+            g.full_clean()
+            for gg in Guess.objects.all():
+                print(gg.hand, gg.writer)
+
+
+    def test_create_a_guess_after_create_hand(self):
+        '''
+            When a Hand is created, a Guess with the right content has to be created too.
+        '''
+        # In 'setUp' self.hand was created.
+        right = Guess.objects.filter(hand=self.hand)[0]
+        self.assertEqual(True, right != None)
+        self.assertEqual(True, right.is_original)
