@@ -87,15 +87,22 @@ class Guess(models.Model):
     started_at = models.DateTimeField(default=timezone.now)
     is_original = models.BooleanField(default=False)
     hand = models.ForeignKey(Hand, on_delete=models.CASCADE)
-    writer = models.ForeignKey(User, on_delete=models.CASCADE)
+    writer = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['hand', 'writer'], name='user_can_write_one_guess_per_hand')
+        ]
+
+
     def save(self, *args, **kwargs):
-        if hasattr(self, 'hand') and Guess.objects.filter(hand=self.hand, is_original=True).exists():
+        if hasattr(self, 'hand') and self.is_original and Guess.objects.filter(hand=self.hand, is_original=True).exists():
             raise ValidationError('Just can exists one "is_original" Guess')
-        
+        elif hasattr(self, 'hand') and self.writer == None and Guess.objects.filter(hand=self.hand, writer=None).exists():
+            raise ValidationError('Just one Guess can have writer as None, the one that has the right answer.')
         super().save(*args, **kwargs)
 
 
     def __str__(self):
-        return f'Guess by {self.writer.username}'
+        return f'Guess by {self.writer.username if self.writer else "GAME"}'
