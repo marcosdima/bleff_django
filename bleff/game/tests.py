@@ -300,7 +300,7 @@ class HandModelTest(TestCase):
             Create a new hand with valid data.
         '''
         try:
-            Hand.objects.create(game=self.game, leader=self.user, word=self.word)
+            h = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
         except ValidationError or IntegrityError:
             self.fail("Valid Hand raised an error")
 
@@ -309,7 +309,7 @@ class HandModelTest(TestCase):
         '''
             Create a new hand without valid data (missing leader).
         '''
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(IntegrityError):
             hand = Hand.objects.create(game=self.game, word=self.word)
             hand.full_clean()
 
@@ -318,7 +318,7 @@ class HandModelTest(TestCase):
         '''
             Create a new hand without valid data (missing game).
         '''
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(IntegrityError):
             hand = Hand.objects.create(leader=self.user, word=self.word)
             hand.full_clean()
 
@@ -327,7 +327,7 @@ class HandModelTest(TestCase):
         '''
             Create a new hand without valid data (missing word).
         '''
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(IntegrityError):
             hand = Hand.objects.create(leader=self.user, game=self.game)
             hand.full_clean()
 
