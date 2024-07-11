@@ -5,7 +5,7 @@ from django.db.utils import IntegrityError
 from django.test import TestCase
 from django.contrib.auth.models import User
 
-from .models import Word, Language, Meaning, Game, Play, Hand, Guess, HandGuess
+from .models import Word, Language, Meaning, Game, Play, Hand, Guess, HandGuess, Vote
 
 def create_basic_meaning(word_translation: str, content: str):
     word = Word.objects.create(word='AnyWord')
@@ -514,3 +514,44 @@ class HandGuessModelTest(TestCase):
         with self.assertRaises(ValidationError):
             handguess.is_correct = False
             handguess.save()
+
+
+class VoteModelTest(TestCase):
+    def setUp(self):
+        self.user = create_basic_user()
+        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.lang = create_basic_language()
+        self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+        self.word = Word.objects.create(word='House')
+        self.meaning = Meaning.objects.create(text='An explanation of what it is in English.', language=self.lang, word=self.word, word_translation='HoUsE')
+        self.hand = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
+        self.content = 'A guess of a Hand, LOL.'
+        self.guess = Guess.objects.create(hand=self.hand, content=self.content, writer=self.user)
+        self.secondary_guess = Guess.objects.create(hand=self.hand, content=self.content, writer=self.secondaryUser)
+    
+    def test_vote(self):
+        '''
+            Emulate a valid vote.
+        '''
+        try:
+            Vote.objects.create(to=HandGuess.objects.get(guess=self.guess), user=self.user)
+        except:
+            self.fail('A valid vote triggered an exception')
+
+
+    def test_vote_twice(self):
+        '''
+            Tries to vote twite to the same vote.
+        '''
+        with self.assertRaises(ValidationError):
+            Vote.objects.create(to=HandGuess.objects.get(guess=self.guess), user=self.user)
+            Vote.objects.create(to=HandGuess.objects.get(guess=self.guess), user=self.user)
+
+
+    def test_vote_two_different_guesses_in_the_same_hand(self):
+        '''
+            Tries to vote two guesses from the same hand.
+        '''
+        with self.assertRaises(ValidationError):
+            Vote.objects.create(to=HandGuess.objects.get(guess=self.guess), user=self.user)
+            Vote.objects.create(to=HandGuess.objects.get(guess=self.secondary_guess), user=self.user)
