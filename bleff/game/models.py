@@ -75,6 +75,8 @@ class Hand(models.Model):
             raise ValidationError("Leader can't be an User that does not belong")
         elif hasattr(self, 'word') and hasattr(self, 'game') and not Meaning.objects.filter(word=self.word, language=self.game.idiom):
             raise ValidationError("Word must have a Meaning in Game idiom")
+        elif self.finished_at and self.finished_at < self.started_at:
+            raise ValidationError('A Hand can not be finished before it starts')
         super().save(*args, **kwargs)
 
 
@@ -97,10 +99,14 @@ class Guess(models.Model):
 
 
     def save(self, *args, **kwargs):
-        if hasattr(self, 'hand') and self.is_original and Guess.objects.filter(hand=self.hand, is_original=True).exists():
-            raise ValidationError('Just can exists one "is_original" Guess')
-        elif hasattr(self, 'hand') and self.writer == None and Guess.objects.filter(hand=self.hand, writer=None).exists():
-            raise ValidationError('Just one Guess can have writer as None, the one that has the right answer.')
+        if hasattr(self, 'hand'):
+            if self.is_original and Guess.objects.filter(hand=self.hand, is_original=True).exists():
+                raise ValidationError('Just can exists one "is_original" Guess')
+            elif not self.writer and Guess.objects.filter(hand=self.hand, writer=None).exists():
+                raise ValidationError('Just one Guess can have writer as None, the one that has the right answer.')
+            elif self.hand.finished_at:
+                raise ValidationError(f"Hand already finished. New guesses for {self.hand} can't be created")
+
         super().save(*args, **kwargs)
 
 
