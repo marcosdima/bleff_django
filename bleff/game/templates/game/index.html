@@ -6,6 +6,9 @@
     <title>Bleff</title>
 </head>
 <body>
-    <div>HELLO!</div>
+    {% for game in object_list %}
+        <h1>~ Game {{game.id}} ~</h1>
+        <p>Created by: {{game.creator}}</p>
+    {% endfor %}
 </body>
 </html>
