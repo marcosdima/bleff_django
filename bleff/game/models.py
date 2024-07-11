@@ -99,7 +99,7 @@ class Guess(models.Model):
 
 
     def save(self, *args, **kwargs):
-        if hasattr(self, 'hand'):
+        if hasattr(self, 'hand') and not self.id:
             if self.is_original and Guess.objects.filter(hand=self.hand, is_original=True).exists():
                 raise ValidationError('Just can exists one "is_original" Guess')
             elif not self.writer and Guess.objects.filter(hand=self.hand, writer=None).exists():
