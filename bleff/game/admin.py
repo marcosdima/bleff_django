@@ -1,3 +1,8 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import Game, Word, Meaning, Language
+
+
+@admin.register(Game, Word, Meaning, Language)
+class PersonAdmin(admin.ModelAdmin):
+    pass
