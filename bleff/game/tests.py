@@ -476,17 +476,19 @@ class HandGuessModelTest(TestCase):
 
     def test_is_correct_should_be_false_by_default(self):
         '''
-            Check if is_correct field has the value None by default.
+            Check if is_correct field has the value False by default.
         '''
         guess = Guess.objects.create(hand=self.hand, content=self.content, writer=self.user)
-        self.assertEqual(False, HandGuess.objects.filter(hand=self.hand, guess=guess)[0].is_correct)
+        self.assertEqual(False, HandGuess.objects.get(hand=self.hand, guess=guess).is_correct)
 
 
     def test_is_correct_can_be_changed_unless_it_is_the_default_guess(self):
         '''
             Check if the default guess HandGuess has 'is_correct' field as False by default.
         '''
-        guess = Guess.objects.filter(hand=self.hand, writer=None)[0]
+        guess = Guess.objects.get(hand=self.hand, writer=None)
+        hand_guess = HandGuess.objects.get(hand=self.hand, guess=guess)
         with self.assertRaises(ValidationError):
-            guess.is_correct = True
-            guess.save()
+            hand_guess.is_correct = True
+            hand_guess.save()
+
