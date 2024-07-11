@@ -482,6 +482,18 @@ class HandGuessModelTest(TestCase):
         self.assertEqual(False, HandGuess.objects.get(hand=self.hand, guess=guess).is_correct)
 
 
+    def test_is_correct_can_be_changed(self):
+        guess = Guess.objects.create(hand=self.hand, writer=self.user)
+        handguess = HandGuess.objects.get(hand=self.hand, guess=guess)
+        self.assertEqual(False, handguess.is_correct)
+        
+        handguess.is_correct = True
+        handguess.save()
+
+        handguess_post_save = HandGuess.objects.get(hand=self.hand, guess=guess)
+        self.assertEqual(True, handguess_post_save.is_correct)
+
+
     def test_is_correct_can_be_changed_unless_it_is_the_default_guess(self):
         '''
             Check if the default guess HandGuess has 'is_correct' field as False by default.
@@ -492,3 +504,13 @@ class HandGuessModelTest(TestCase):
             hand_guess.is_correct = True
             hand_guess.save()
 
+    
+    def test_is_correct_can_be_changed_but_just_one_time(self):
+        guess = Guess.objects.create(hand=self.hand, writer=self.user)
+        handguess = HandGuess.objects.get(hand=self.hand, guess=guess)
+        handguess.is_correct = True
+        handguess.save()
+
+        with self.assertRaises(ValidationError):
+            handguess.is_correct = False
+            handguess.save()
