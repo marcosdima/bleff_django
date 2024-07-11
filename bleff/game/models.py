@@ -1,3 +1,4 @@
+from typing import Iterable
 from django.core.validators import MinLengthValidator
 from django.utils import timezone
 from django.forms import ValidationError
@@ -128,3 +129,14 @@ class HandGuess(models.Model):
 
     def __str__(self):
         return f'{self.hand} -> {self.guess}'
+    
+
+class Vote(models.Model):
+    to = models.ForeignKey(HandGuess, on_delete=models.PROTECT)
+    user = models.ForeignKey(User, on_delete=models.PROTECT) # TODO: Think about on delete and update.
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['to', 'user'], name='unique_user_guess_vote')
+        ]
