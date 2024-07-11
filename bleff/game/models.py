@@ -112,3 +112,19 @@ class Guess(models.Model):
 
     def __str__(self):
         return f'Guess by {self.writer.username if self.writer else "GAME"}'
+    
+
+class HandGuess(models.Model):
+    hand = models.ForeignKey(Hand, on_delete=models.CASCADE)
+    guess = models.ForeignKey(Guess, on_delete=models.CASCADE)
+    is_correct = models.BooleanField(default=False)
+
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['hand', 'guess'], name='hand_guess_combinations_are_unique')
+        ]
+
+
+    def __str__(self):
+        return f'{self.hand} -> {self.guess}'
