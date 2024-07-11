@@ -20,3 +20,18 @@ def creator_right_guess(sender, instance, created, **kwargs):
 def creator_handguess(sender, instance, created, **kwargs):
     if created:
         HandGuess.objects.create(hand=instance.hand, guess=instance)
+
+
+@receiver(pre_save, sender=HandGuess)
+def update_handguess_restriction(sender, instance, **kwargs):
+    if instance.pk:
+            previus = HandGuess.objects.get(pk=instance.pk)
+        
+            '''
+            This means that was modified to True before.
+            TODO: Should check if there are any votes, in that case updating is forbidden.
+            '''
+            if previus.is_correct:
+                raise ValidationError("You can update HandGuess just one time")
+            elif not hasattr(previus.hand, 'writer'):
+                raise ValidationError("You can't modify 'by default Guess' HandGuess")
