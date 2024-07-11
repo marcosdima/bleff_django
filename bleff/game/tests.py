@@ -5,7 +5,7 @@ from django.db.utils import IntegrityError
 from django.test import TestCase
 from django.contrib.auth.models import User
 
-from .models import Word, Language, Meaning, Game, Play, Hand, Guess
+from .models import Word, Language, Meaning, Game, Play, Hand, Guess, HandGuess
 
 def create_basic_meaning(word_translation: str, content: str):
     word = Word.objects.create(word='AnyWord')
@@ -371,7 +371,6 @@ class HandModelTest(TestCase):
             hand.save()
 
 
-
 class GuessModelTest(TestCase):
     def setUp(self):
         self.user = create_basic_user()
@@ -443,3 +442,51 @@ class GuessModelTest(TestCase):
         '''
         with self.assertRaises(ValidationError):
             Guess.objects.create(hand=self.hand, content=self.content, writer=None)
+
+
+class HandGuessModelTest(TestCase):
+    def setUp(self):
+        self.user = create_basic_user()
+        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.lang = create_basic_language()
+        self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+        self.word = Word.objects.create(word='House')
+        self.meaning = Meaning.objects.create(text='An explanation of what it is in English.', language=self.lang, word=self.word, word_translation='HoUsE')
+        self.hand = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
+        self.content = 'A guess of a Hand, LOL.'
+
+
+    def test_after_guess_is_created_a_handguess_is_created_too(self):
+        '''
+            Checks if after a Guess is created, a HandGuess is created too.
+        '''
+        guess = Guess.objects.create(hand=self.hand, content=self.content, writer=self.user)
+        self.assertEqual(1, HandGuess.objects.filter(hand=self.hand, guess=guess).count())
+        self.assertEqual(2, len(HandGuess.objects.all()))
+
+
+    def test_cant_exists_handguess_duplicates(self):
+        '''
+            Tries to create a HandGuess by hand.
+        '''
+        guess = Guess.objects.create(hand=self.hand, content=self.content, writer=self.user)
+        with self.assertRaises(IntegrityError):
+            HandGuess.objects.create(hand=self.hand, guess=guess)
+
+
+    def test_is_correct_should_be_false_by_default(self):
+        '''
+            Check if is_correct field has the value None by default.
+        '''
+        guess = Guess.objects.create(hand=self.hand, content=self.content, writer=self.user)
+        self.assertEqual(False, HandGuess.objects.filter(hand=self.hand, guess=guess)[0].is_correct)
+
+
+    def test_is_correct_can_be_changed_unless_it_is_the_default_guess(self):
+        '''
+            Check if the default guess HandGuess has 'is_correct' field as False by default.
+        '''
+        guess = Guess.objects.filter(hand=self.hand, writer=None)[0]
+        with self.assertRaises(ValidationError):
+            guess.is_correct = True
+            guess.save()
