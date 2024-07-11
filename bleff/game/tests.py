@@ -529,6 +529,7 @@ class VoteModelTest(TestCase):
         self.guess = Guess.objects.create(hand=self.hand, content=self.content, writer=self.user)
         self.secondary_guess = Guess.objects.create(hand=self.hand, content=self.content, writer=self.secondaryUser)
     
+
     def test_vote(self):
         '''
             Emulate a valid vote.
@@ -555,3 +556,13 @@ class VoteModelTest(TestCase):
         with self.assertRaises(ValidationError):
             Vote.objects.create(to=HandGuess.objects.get(guess=self.guess), user=self.user)
             Vote.objects.create(to=HandGuess.objects.get(guess=self.secondary_guess), user=self.user)
+
+
+    def test_vote_in_a_finished_hand(self):
+        '''
+            Tries to vote when a hand already ended.
+        '''
+        self.hand.finished_at = timezone.now()
+        self.hand.save()
+        with self.assertRaises(ValidationError):
+            Vote.objects.create(to=HandGuess.objects.get(guess=self.guess), user=self.user)
