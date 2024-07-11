@@ -2,7 +2,7 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.forms import ValidationError
 
-from .models import Game, Play, Hand, Guess, Meaning, HandGuess
+from .models import Game, Play, Hand, Guess, Meaning, HandGuess, Vote
 
 @receiver(post_save, sender=Game)
 def creator_play_creation(sender, instance, created, **kwargs):
@@ -35,3 +35,12 @@ def update_handguess_restriction(sender, instance, **kwargs):
                 raise ValidationError("You can update HandGuess just one time")
             elif not previus.guess.writer:
                 raise ValidationError("You can't modify 'by default Guess' HandGuess")
+            
+
+@receiver(pre_save, sender=Vote)
+def play_creator_restriction(sender, instance, **kwargs):
+    if not instance.pk:
+        if instance.to.hand.finished_at:
+            raise ValidationError("You can't vote in a finished hand")
+        elif Vote.objects.filter(to__hand=instance.to.hand, user=instance.user).exists():
+            raise ValidationError("You can't voto again in the same hand")
