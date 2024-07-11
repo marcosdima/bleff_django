@@ -33,5 +33,5 @@ def update_handguess_restriction(sender, instance, **kwargs):
             '''
             if previus.is_correct:
                 raise ValidationError("You can update HandGuess just one time")
-            elif not hasattr(previus.hand, 'writer'):
+            elif not previus.guess.writer:
                 raise ValidationError("You can't modify 'by default Guess' HandGuess")
