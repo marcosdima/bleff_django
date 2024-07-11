@@ -1,3 +1,5 @@
+from datetime import timedelta
+from django.utils import timezone
 from django.forms import ValidationError
 from django.db.utils import IntegrityError
 from django.test import TestCase
@@ -300,7 +302,7 @@ class HandModelTest(TestCase):
             Create a new hand with valid data.
         '''
         try:
-            h = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
+            Hand.objects.create(game=self.game, leader=self.user, word=self.word)
         except ValidationError or IntegrityError:
             self.fail("Valid Hand raised an error")
 
@@ -346,6 +348,28 @@ class HandModelTest(TestCase):
         '''
         with self.assertRaises(ValidationError):
             Hand.objects.create(game=self.game, leader=self.secondaryUser)
+
+
+    def test_finish_hand(self):
+        '''
+            Sets finished_at as now.
+        '''
+        finished = timezone.now() + timedelta(days=1)
+        hand = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
+        hand.finished_at = finished
+        hand.save()
+        self.assertEqual(finished, Hand.objects.filter(id=hand.id)[0].finished_at)
+
+
+    def test_finish_hand_before_started(self):
+        '''
+            Tries to set a finishing time that happend before the starting time.
+        '''
+        with self.assertRaises(ValidationError):
+            hand = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
+            hand.finished_at = timezone.now() - timedelta(days=1)
+            hand.save()
+
 
 
 class GuessModelTest(TestCase):
@@ -412,8 +436,7 @@ class GuessModelTest(TestCase):
         with self.assertRaises(ValidationError):
             Guess.objects.create(hand=self.hand, content=self.content, writer=self.user, is_original=True)
 
-
-    
+  
     def test_a_guess_writer_can_be_none_just_in_is_the_original_case(self):
         '''
             The only Guess that accepts writer as None is the first one, the right one.
