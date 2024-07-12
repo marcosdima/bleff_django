@@ -7,8 +7,11 @@
 </head>
 <body>
     {% for game in object_list %}
-        <h1>~ Game {{game.id}} ~</h1>
-        <p>Created by: {{game.creator}}</p>
+        <div>
+            <a href="{% url 'game:waiting' game.id %}">
+            <h1>~ Game {{game.id}} ~</h1>
+            <p>Created by: {{game.creator}}</p>
+        <div>
     {% endfor %}
 </body>
 </html>
