@@ -9,5 +9,6 @@
     {% for user in object_list %}
         <h1>{{forloop.counter}}. {{user.username}}</h1>
     {% endfor %}
+        <p><a href="{% url 'game:start_game' game_id %}">Start Game</p>
 </body>
 </html>
