@@ -327,15 +327,6 @@ class HandModelTest(TestCase):
             hand.full_clean()
 
 
-    def test_create_a_new_hand_with_no_word(self):
-        '''
-            Create a new hand without valid data (missing word).
-        '''
-        with self.assertRaises(IntegrityError):
-            hand = Hand.objects.create(leader=self.user, game=self.game)
-            hand.full_clean()
-
-
     def test_create_a_new_hand_with_a_word_without_meaning(self):
         '''
             Create a new hand with a word with no meaning in the Game idiom.
@@ -406,6 +397,29 @@ class HandModelTest(TestCase):
         
         second = Hand.objects.create(game=self.game, word=self.word_2)
         self.assertEqual(second.leader.id, self.secondaryUser.id)
+
+
+    def test_hand_word_set(self):
+        '''
+            Sets the hand word.
+        '''
+        hand = Hand.objects.create(game=self.game)
+        hand.word = self.word
+        hand.save()
+
+        
+    def test_hand_word_set_twice(self):
+        '''
+            Sets the hand word twice, not permited.
+        '''
+        hand = Hand.objects.create(game=self.game)
+        hand.word = self.word
+        hand.save()
+
+        with self.assertRaises(ValidationError):
+            hand.word = self.word_2
+            hand.save()
+
 
 
 class GuessModelTest(TestCase):
