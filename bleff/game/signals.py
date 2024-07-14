@@ -44,3 +44,18 @@ def play_creator_restriction(sender, instance, **kwargs):
             raise ValidationError("You can't vote in a finished hand")
         elif Vote.objects.filter(to__hand=instance.to.hand, user=instance.user).exists():
             raise ValidationError("You can't voto again in the same hand")
+        
+
+@receiver(pre_save, sender=Hand)
+def hand_set_leader(sender, instance, **kwargs):
+    if not hasattr(instance, 'leader'):
+        # Gets game players.
+        players = [p.user for p in Play.objects.filter(game=instance.game)]
+
+        # Gets te last n (number of players - 1) leaders.
+        last_n_leaders = [h.leader for h in Hand.objects.filter(game=instance.game).order_by('-started_at')][:len(players)-1]
+
+        # If any of them does not apper in last_n_leaders, we got the leader.
+        for p in players:
+            if not p in last_n_leaders:
+                instance.leader = p
