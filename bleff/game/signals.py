@@ -12,7 +12,7 @@ def creator_play_creation(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=Hand)
 def creator_right_guess(sender, instance, created, **kwargs):
-    if created:
+    if created and instance.word:
         Guess.objects.create(content=Meaning.objects.filter(word=instance.word)[0].text, is_original=True, hand=instance)
 
 
@@ -59,6 +59,16 @@ def hand_set_leader(sender, instance, **kwargs):
         for p in players:
             if not p in last_n_leaders:
                 instance.leader = p
+
+
+@receiver(pre_save, sender=Hand)
+def hand_word_change_again(sender, instance, **kwargs):
+    if instance.id:
+        previus = Hand.objects.get(id=instance.id)
+
+        if previus.word != None and previus.word != instance.word:
+            raise ValidationError('Hand word can not be changed')
+
 
 
 @receiver(pre_save, sender=Hand)
