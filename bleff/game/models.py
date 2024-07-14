@@ -5,7 +5,6 @@ from django.forms import ValidationError
 from django.contrib.auth.models import User
 from django.db import models
 
-
 class Word(models.Model):
     word = models.CharField(max_length=40, unique=True, validators=[MinLengthValidator(3)])
 
@@ -68,7 +67,7 @@ class Hand(models.Model):
     finished_at = models.DateTimeField(null=True, blank=True)
     leader = models.ForeignKey(User, on_delete=models.PROTECT) # TODO: Maybe SET_NULL could work.
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
-    word = models.ForeignKey(Word, on_delete=models.PROTECT)
+    word = models.ForeignKey(Word, on_delete=models.PROTECT, null=True)
 
 
     class Meta:
@@ -80,10 +79,11 @@ class Hand(models.Model):
     def save(self, *args, **kwargs):
         if hasattr(self, 'leader') and hasattr(self, 'game') and not Play.objects.filter(game=self.game, user=self.leader).exists():
             raise ValidationError("Leader can't be an User that does not belong")
-        elif hasattr(self, 'word') and hasattr(self, 'game') and not Meaning.objects.filter(word=self.word, language=self.game.idiom):
+        elif hasattr(self, 'word') and self.word != None and hasattr(self, 'game') and not Meaning.objects.filter(word=self.word, language=self.game.idiom):
             raise ValidationError("Word must have a Meaning in Game idiom")
         elif self.finished_at and self.finished_at < self.started_at:
             raise ValidationError('A Hand can not be finished before it starts')
+
         super().save(*args, **kwargs)
 
 
