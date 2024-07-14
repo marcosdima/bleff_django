@@ -294,7 +294,9 @@ class HandModelTest(TestCase):
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
         self.word = Word.objects.create(word='House')
+        self.word_2 = Word.objects.create(word='DOU')
         self.meaning = Meaning.objects.create(text='An explanation of what it is in English.', language=self.lang, word=self.word, word_translation='HoUsE')
+        self.meaning_2 = Meaning.objects.create(text='An explanation of what it is in English.', language=self.lang, word=self.word_2, word_translation='DO')
 
 
     def test_create_a_new_hand(self):
@@ -369,6 +371,27 @@ class HandModelTest(TestCase):
             hand = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
             hand.finished_at = timezone.now() - timedelta(days=1)
             hand.save()
+
+
+    def  test_hand_word_realtion_is_unique(self):
+        '''
+            In a game can not appear the same word twice.
+        '''
+        first = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
+        first.finished_at = timezone.now()
+        first.save()
+        with self.assertRaises(IntegrityError):
+            Hand.objects.create(game=self.game, leader=self.user, word=self.word)
+
+
+    def test_hand_can_not_be_created_if_there_is_another_unfinished(self):
+        '''
+            A hand can't be created if exists another with finished_at as None.
+        '''
+        Hand.objects.create(game=self.game, leader=self.user, word=self.word)
+        
+        with self.assertRaises(ValidationError):
+            Hand.objects.create(game=self.game, leader=self.user, word=self.word_2)
 
 
 class GuessModelTest(TestCase):
