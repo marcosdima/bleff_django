@@ -394,6 +394,20 @@ class HandModelTest(TestCase):
             Hand.objects.create(game=self.game, leader=self.user, word=self.word_2)
 
 
+    def test_hand_leader_default_setter_rotates_players(self):
+        '''
+            A hand can't be created if exists another with finished_at as None.
+        '''
+        Play.objects.create(game=self.game, user=self.secondaryUser)
+
+        first = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
+        first.finished_at = timezone.now()
+        first.save()
+        
+        second = Hand.objects.create(game=self.game, word=self.word_2)
+        self.assertEqual(second.leader.id, self.secondaryUser.id)
+
+
 class GuessModelTest(TestCase):
     def setUp(self):
         self.user = create_basic_user()
