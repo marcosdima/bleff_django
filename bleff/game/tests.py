@@ -309,11 +309,11 @@ class HandModelTest(TestCase):
 
     def test_create_a_new_hand_with_no_leader(self):
         '''
-            Create a new hand without valid data (missing leader).
+            Create a new hand without 'leader'. The leader should be setted by default as the game creator (Beacuase is the only player)
         '''
-        with self.assertRaises(IntegrityError):
-            hand = Hand.objects.create(game=self.game, word=self.word)
-            hand.full_clean()
+        hand = Hand.objects.create(game=self.game, word=self.word)
+        self.assertIsNot(None, hand.leader)
+        self.assertEqual(self.game.creator.id, hand.leader.id)
 
     
     def test_create_a_new_hand_with_no_game(self):
