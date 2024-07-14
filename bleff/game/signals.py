@@ -59,3 +59,13 @@ def hand_set_leader(sender, instance, **kwargs):
         for p in players:
             if not p in last_n_leaders:
                 instance.leader = p
+
+
+@receiver(pre_save, sender=Hand)
+def hand_creation_restriction(sender, instance, **kwargs):
+    game = instance.game if hasattr(instance, 'game') else None
+    unfinished_hand = Hand.objects.filter(game=game, finished_at=None).exclude(id=instance.id).exists()
+
+    if unfinished_hand and instance.id == None:
+        raise ValidationError('The previus hand must finish before another its created!')
+
