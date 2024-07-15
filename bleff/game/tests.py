@@ -296,10 +296,8 @@ class HandModelTest(TestCase):
         self.secondaryUser = User.objects.create_user(username='second', password='1234')
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
-        self.word = Word.objects.create(word='House')
-        self.word_2 = Word.objects.create(word='DOU')
-        self.meaning = Meaning.objects.create(text='An explanation of what it is in English.', language=self.lang, word=self.word, word_translation='HoUsE')
-        self.meaning_2 = Meaning.objects.create(text='An explanation of what it is in English.', language=self.lang, word=self.word_2, word_translation='DO')
+        self.word, self.meaning = create_word_meaning('House', language=self.lang, content='An explanation of what "HOUSE" is in English.', word_translation='HoUsE')
+        self.word_2, self.meaning_2 = create_word_meaning('Dou', language=self.lang, content='An explanation of what "DOU" is in English.', word_translation='DoU')
 
 
     def test_create_a_new_hand(self):
@@ -430,8 +428,7 @@ class GuessModelTest(TestCase):
         self.secondaryUser = User.objects.create_user(username='second', password='1234')
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
-        self.word = Word.objects.create(word='House')
-        self.meaning = Meaning.objects.create(text='An explanation of what it is in English.', language=self.lang, word=self.word, word_translation='HoUsE')
+        self.word, self.meaning = create_word_meaning('House', language=self.lang, content='An explanation of what "HOUSE" is in English.', word_translation='HoUsE')
         self.hand = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
         self.content = 'A guess of a Hand, LOL.'
 
@@ -503,8 +500,7 @@ class HandGuessModelTest(TestCase):
         self.secondaryUser = User.objects.create_user(username='second', password='1234')
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
-        self.word = Word.objects.create(word='House')
-        self.meaning = Meaning.objects.create(text='An explanation of what it is in English.', language=self.lang, word=self.word, word_translation='HoUsE')
+        self.word, self.meaning = create_word_meaning('House', language=self.lang, content='An explanation of what "HOUSE" is in English.', word_translation='HoUsE')
         self.hand = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
         self.content = 'A guess of a Hand, LOL.'
 
@@ -575,8 +571,7 @@ class VoteModelTest(TestCase):
         self.secondaryUser = User.objects.create_user(username='second', password='1234')
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
-        self.word = Word.objects.create(word='House')
-        self.meaning = Meaning.objects.create(text='An explanation of what it is in English.', language=self.lang, word=self.word, word_translation='HoUsE')
+        self.word, self.meaning = create_word_meaning('House', language=self.lang, content='An explanation of what "HOUSE" is in English.', word_translation='HoUsE')
         self.hand = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
         self.content = 'A guess of a Hand, LOL.'
         self.guess = Guess.objects.create(hand=self.hand, content=self.content, writer=self.user)
@@ -619,4 +614,3 @@ class VoteModelTest(TestCase):
         self.hand.save()
         with self.assertRaises(ValidationError):
             Vote.objects.create(to=HandGuess.objects.get(guess=self.guess), user=self.user)
-
