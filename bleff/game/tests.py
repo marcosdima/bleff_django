@@ -663,3 +663,33 @@ class UtilsFunctionsTest(TestCase):
         '''
         game = Game.objects.create(creator=self.secondaryUser, idiom=Language.objects.create(tag='DOESNT', name='EXISTS'))
         self.assertListEqual(utils.get_game_words_choice(game_id=game.id, n_words=self.n_words) ,[])
+
+
+    def test_plays_game_function_should_be_true(self):
+        '''
+            This function should say if a player plays a game.
+        '''
+        self.assertTrue(utils.plays_game(self.user, self.game.id))
+
+
+    def test_plays_game_function_should_be_false(self):
+        '''
+            This function should say if a player plays a game.
+        '''
+        self.assertFalse(utils.plays_game(self.secondaryUser, self.game.id))
+
+    
+    def test_is_leader_function_should_be_true(self):
+        '''
+            This function should say if a player is a hand leader.
+        '''
+        Hand.objects.create(game=self.game)
+        self.assertTrue(utils.is_leader(self.user, self.game.id))
+
+
+    def test_is_leader_function_should_be_false(self):
+        '''
+            This function should say if a player is a hand leader.
+        '''
+        Hand.objects.create(game=self.game)
+        self.assertFalse(utils.is_leader(self.secondaryUser, self.game.id))
