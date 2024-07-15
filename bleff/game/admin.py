@@ -1,21 +1,30 @@
 from django.contrib import admin
 
-from .models import Game, Word, Meaning, Language, Play
+from .models import Game, Word, Meaning, Language, Play, Hand
 
 class PlayInLine(admin.TabularInline):
     model = Play
     extra = 2
 
+
 class MeaningInLine(admin.TabularInline):
     model = Meaning
 
+
+class HandInLine(admin.TabularInline):
+    model = Hand
+    extra = 0
+
+
 @admin.register(Game)
 class GameAdmin(admin.ModelAdmin):
-    inlines = [PlayInLine]
+    inlines = [PlayInLine, HandInLine]
+
 
 @admin.register(Word)
 class WordAdmin(admin.ModelAdmin):
     inlines = [MeaningInLine]
+
 
 @admin.register(Language)
 class PersonAdmin(admin.ModelAdmin):
