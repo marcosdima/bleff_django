@@ -1,4 +1,3 @@
-from typing import Iterable
 from django.core.validators import MinLengthValidator
 from django.utils import timezone
 from django.forms import ValidationError
