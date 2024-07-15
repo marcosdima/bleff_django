@@ -1,6 +1,7 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect
 from django.views import generic
 from django.contrib.auth.models import User
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 from .models import Game, Play, Hand
 
@@ -9,7 +10,7 @@ class IndexView(generic.ListView):
     template_name = "game/index.html"
 
 
-class WaitingView(generic.ListView):
+class WaitingView(LoginRequiredMixin, generic.ListView):
     model=User
     template_name = "game/waiting.html"
     game_id = ''
