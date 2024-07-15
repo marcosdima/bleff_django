@@ -614,3 +614,44 @@ class VoteModelTest(TestCase):
         self.hand.save()
         with self.assertRaises(ValidationError):
             Vote.objects.create(to=HandGuess.objects.get(guess=self.guess), user=self.user)
+
+
+class UtilsFunctionsTest(TestCase):
+    def setUp(self):
+        self.user = create_basic_user()
+        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.lang = create_basic_language()
+        self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+
+        self.words = ['Cow', 'Diary', 'Python', 'Goose', 'Cheese']
+        self.n_words = 5
+        for word in self.words:
+            create_word_meaning(word, language=self.lang, content=f'An explanation of what "{word}" is in English.', word_translation=word)
+    
+
+    def test_get_game_word_choice(self):
+        '''
+            Test if the function to get words for a hand works.
+        '''
+        function_words = [w.word for w in utils.get_game_words_choice(self.game.id, self.n_words)]
+        self.assertEqual(len(function_words), self.n_words)
+
+        for word in function_words:
+            self.assertTrue(word in self.words)
+
+
+    def test_get_game_word_choice_when_exists_hands(self):
+        '''
+            Test if the function to get words for a hand works when a word was selected in a previus hand.
+        '''
+        Hand.objects.create(game=self.game, word=Word.objects.get(word=self.words[0]))
+
+        function_words = [w.word for w in utils.get_game_words_choice(self.game.id, self.n_words)]
+        self.assertEqual(len(function_words), self.n_words - 1)
+
+        for word in function_words:
+            self.assertTrue(word in self.words)
+
+        self.assertFalse(self.words[0] in function_words)
+        
+
