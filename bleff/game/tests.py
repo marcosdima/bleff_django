@@ -1,3 +1,4 @@
+import random
 from datetime import timedelta
 from django.utils import timezone
 from django.forms import ValidationError
@@ -640,11 +641,12 @@ class UtilsFunctionsTest(TestCase):
             self.assertTrue(word in self.words)
 
 
-    def test_get_game_word_choice_when_exists_hands(self):
+    def test_get_game_word_choice_when_exists_a_previus_hand(self):
         '''
             Test if the function to get words for a hand works when a word was selected in a previus hand.
         '''
-        Hand.objects.create(game=self.game, word=Word.objects.get(word=self.words[0]))
+        index = random.randint(0, len(self.words) - 1)
+        Hand.objects.create(game=self.game, word=Word.objects.get(word=self.words[index]))
 
         function_words = [w.word for w in utils.get_game_words_choice(self.game.id, self.n_words)]
         self.assertEqual(len(function_words), self.n_words - 1)
@@ -652,6 +654,12 @@ class UtilsFunctionsTest(TestCase):
         for word in function_words:
             self.assertTrue(word in self.words)
 
-        self.assertFalse(self.words[0] in function_words)
+        self.assertFalse(self.words[index] in function_words)
         
 
+    def test_get_game_word_choice_when_there_are_no_words(self):
+        '''
+            If there are no words in the game idiom, then should return an empty list.
+        '''
+        game = Game.objects.create(creator=self.secondaryUser, idiom=Language.objects.create(tag='DOESNT', name='EXISTS'))
+        self.assertListEqual(utils.get_game_words_choice(game_id=game.id, n_words=self.n_words) ,[])
