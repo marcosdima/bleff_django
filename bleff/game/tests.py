@@ -1,5 +1,6 @@
 import random
 from datetime import timedelta
+from django.urls import reverse
 from django.utils import timezone
 from django.forms import ValidationError
 from django.db.utils import IntegrityError
@@ -720,3 +721,30 @@ class UtilsFunctionsTest(TestCase):
             This function should return the current hand.
         '''
         self.assertEqual(None, utils.get_game_hand(game_id=self.game.id))
+
+
+class GameViewTests(TestCase):
+    def setUp(self):
+        self.user = create_basic_user()
+        self.lang = create_basic_language()
+
+
+    def test_games(self):
+        '''
+            The view should display a list of available games.
+        '''
+        game = Game.objects.create(creator=self.user, idiom=self.lang)
+        response = self.client.get(reverse('game:index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "No games are available.")
+        self.assertQuerySetEqual(response.context["object_list"], [game])
+
+
+    def test_no_games(self):
+        '''
+            The view should display a no-games message.
+        '''
+        response = self.client.get(reverse('game:index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "No games are available.")
+        self.assertQuerySetEqual(response.context["object_list"], [])
