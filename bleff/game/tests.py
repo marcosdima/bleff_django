@@ -693,3 +693,30 @@ class UtilsFunctionsTest(TestCase):
         '''
         Hand.objects.create(game=self.game)
         self.assertFalse(utils.is_leader(self.secondaryUser, self.game.id))
+
+
+    def test_get_hand_function(self):
+        '''
+            This function should return the current hand.
+        '''
+        hand = Hand.objects.create(game=self.game)
+        self.assertEqual(hand, utils.get_game_hand(game_id=self.game.id))
+
+
+    def test_get_hand_function_with_two_hands(self):
+        '''
+            This function should return the current hand.
+        '''
+        hand = Hand.objects.create(game=self.game)
+        hand.finished_at = timezone.now()
+        hand.save()
+
+        second_hand = Hand.objects.create(game=self.game)
+        self.assertEqual(second_hand, utils.get_game_hand(game_id=self.game.id))
+
+
+    def test_get_hand_function_with_no_hands(self):
+        '''
+            This function should return the current hand.
+        '''
+        self.assertEqual(None, utils.get_game_hand(game_id=self.game.id))
