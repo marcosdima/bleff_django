@@ -6,12 +6,12 @@ from django.test import TestCase
 from django.contrib.auth.models import User
 
 from .models import Word, Language, Meaning, Game, Play, Hand, Guess, HandGuess, Vote
+from . import utils
 
-def create_basic_meaning(word_translation: str, content: str):
-    word = Word.objects.create(word='AnyWord')
-    language = Language.objects.create(tag='En', name='English')
+def create_word_meaning(word: str, language: Language, word_translation: str, content: str):
+    word = Word.objects.create(word=word)
 
-    return Meaning.objects.create(text=content, word_translation=word_translation, word=word, language=language)
+    return word, Meaning.objects.create(text=content, word_translation=word_translation, word=word, language=language)
 
 
 def create_basic_user():
@@ -149,10 +149,14 @@ class LanguageModelTest(TestCase):
 
 
 class MeaningModelTest(TestCase):
+    def setUp(self):
+        self.lang = Language.objects.create(tag='EN', name='English')
+
+
     def test_create_a_meaning(self):
-        word = 'House'
+        word_text = 'House'
         content = 'A place where you live.'
-        meaning = create_basic_meaning(word_translation=word, content=content)
+        _, meaning = create_word_meaning(word=word_text, language=self.lang, word_translation=word_text, content=content)
 
         try:
             meaning.full_clean() 
@@ -164,9 +168,9 @@ class MeaningModelTest(TestCase):
         '''
             Create a new meaning with empty strings as word_translation.
         '''
-        word = ''
+        word_text = ''
         content = 'A place where you live.'
-        meaning = create_basic_meaning(word_translation=word, content=content)
+        _, meaning = create_word_meaning(word=word_text, language=self.lang, word_translation=word_text, content=content)
 
         with self.assertRaises(ValidationError):
            meaning.full_clean()
@@ -176,9 +180,9 @@ class MeaningModelTest(TestCase):
         '''
             Create a new meaning with empty strings as content.
         '''
-        word = 'House'
+        word_text = 'House'
         content = ''
-        meaning = create_basic_meaning(word_translation=word, content=content)
+        _, meaning = create_word_meaning(word=word_text, language=self.lang, word_translation=word_text, content=content)
 
         with self.assertRaises(ValidationError):
            meaning.full_clean()
@@ -186,19 +190,18 @@ class MeaningModelTest(TestCase):
 
     def test_create_a_meaning_duplicated(self):
         word = Word.objects.create(word='House')
-        lang = Language.objects.create(tag='En', name='English')
         content = 'A place where you live.'
-        Meaning.objects.create(text=content, word_translation='House', word=word, language=lang)
+        Meaning.objects.create(text=content, word_translation='House', word=word, language=self.lang)
         
         with self.assertRaises(IntegrityError):
-           Meaning.objects.create(text=content, word_translation='House', word=word, language=lang)
+           Meaning.objects.create(text=content, word_translation='House', word=word, language=self.lang)
 
 
     def test_meaning_str_function(self):
-        word = 'House'
+        word_text = 'House'
         content = 'A place where you live.'
-        meaning = create_basic_meaning(word_translation=word, content=content)
-        self.assertEqual(f'{word}: {content}', meaning.__str__(), 'Str function does not works!')
+        _, meaning = create_word_meaning(word=word_text, language=self.lang, word_translation=word_text, content=content)
+        self.assertEqual(f'{word_text}: {content}', meaning.__str__(), 'Str function does not works!')
 
 
 class GameModelTest(TestCase):
@@ -421,7 +424,6 @@ class HandModelTest(TestCase):
             hand.save()
 
 
-
 class GuessModelTest(TestCase):
     def setUp(self):
         self.user = create_basic_user()
@@ -617,3 +619,4 @@ class VoteModelTest(TestCase):
         self.hand.save()
         with self.assertRaises(ValidationError):
             Vote.objects.create(to=HandGuess.objects.get(guess=self.guess), user=self.user)
+
