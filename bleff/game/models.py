@@ -90,6 +90,8 @@ class Hand(models.Model):
             raise ValidationError("Word must have a Meaning in Game idiom")
         elif self.finished_at and self.finished_at < self.created_at:
             raise ValidationError('A Hand can not be finished before it starts')
+        elif hasattr(self, 'game') and self.game.finished_at != None:
+            raise ValidationError('Can not create a game ended hand')
 
         super().save(*args, **kwargs)
 
