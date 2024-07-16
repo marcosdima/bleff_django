@@ -23,7 +23,9 @@ class WaitingView(LoginRequiredMixin, generic.ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)    
-        context['game_id'] = self.kwargs.get('game_id') 
+        id = self.kwargs.get('game_id') 
+        game = Game.objects.get(id=id)
+        context['game'] = game
         return context
 
 
