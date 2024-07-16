@@ -254,6 +254,29 @@ class GameModelTest(TestCase):
         self.assertEqual(f'Game {game.id}: created by SECRET', game.__str__(), 'Str function does not works!')
 
 
+    def test_set_game_as_finished(self):
+        '''
+            Tests if its possible to set a game as finished.
+        '''
+        game = Game.objects.create(creator=self.user, idiom=self.lang)
+        game.end()
+
+        gameAfterEnd = Game.objects.get(id=game.id)
+        self.assertFalse(gameAfterEnd.finished_at == None)
+
+
+    def test_set_game_as_finished(self):
+        '''
+            Tests if its possible to set a game as finished twice.
+        '''
+        game = Game.objects.create(creator=self.user, idiom=self.lang)
+        game.end()
+
+        with self.assertRaises(ValidationError):
+            gameAfterEnd = Game.objects.get(id=game.id)
+            gameAfterEnd.end()
+
+
 class PlayModelTest(TestCase):
     def setUp(self):
         self.user = create_basic_user()
@@ -365,7 +388,7 @@ class HandModelTest(TestCase):
             hand.save()
 
 
-    def  test_hand_word_realtion_is_unique(self):
+    def test_hand_word_realtion_is_unique(self):
         '''
             In a game can not appear the same word twice.
         '''
@@ -420,6 +443,16 @@ class HandModelTest(TestCase):
         with self.assertRaises(ValidationError):
             hand.word = self.word_2
             hand.save()
+
+
+    def test_create_hand_in_finished_game(self):
+        '''
+            If a game ended, then more hands can not be created.
+        '''
+        self.game.end()
+        
+        with self.assertRaises(ValidationError):
+            Hand.objects.create(game=self.game)
 
 
 class GuessModelTest(TestCase):
