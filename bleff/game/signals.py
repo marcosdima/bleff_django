@@ -1,29 +1,31 @@
+import random
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.forms import ValidationError
+from django.conf import settings
 
-from .models import Game, Play, Hand, Guess, Meaning, HandGuess, Vote, Choose
+from .models import Game, Play, Hand, Guess, Meaning, HandGuess, Vote, Choose, Word
 
 @receiver(post_save, sender=Game)
-def creator_play_creation(sender, instance, created, **kwargs):
+def play_creation_creator(sender, instance, created, **kwargs):
     if created and instance.creator:
         Play.objects.create(game=instance, user=instance.creator)
 
 
 @receiver(post_save, sender=Hand)
-def creator_right_guess(sender, instance, created, **kwargs):
+def right_guess_creator(sender, instance, created, **kwargs):
     if created and instance.word:
         Guess.objects.create(content=Meaning.objects.filter(word=instance.word)[0].text, is_original=True, hand=instance)
 
 
 @receiver(post_save, sender=Guess)
-def creator_handguess(sender, instance, created, **kwargs):
+def handguess_creator(sender, instance, created, **kwargs):
     if created:
         HandGuess.objects.create(hand=instance.hand, guess=instance)
 
 
 @receiver(pre_save, sender=HandGuess)
-def update_handguess_restriction(sender, instance, **kwargs):
+def handguess_update_restriction(sender, instance, **kwargs):
     if instance.pk:
             previus = HandGuess.objects.get(pk=instance.pk)
         
@@ -38,12 +40,12 @@ def update_handguess_restriction(sender, instance, **kwargs):
             
 
 @receiver(pre_save, sender=Vote)
-def play_creator_restriction(sender, instance, **kwargs):
+def vote_creator_restriction(sender, instance, **kwargs):
     if not instance.pk:
         if instance.to.hand.finished_at:
             raise ValidationError("You can't vote in a finished hand")
         elif Vote.objects.filter(to__hand=instance.to.hand, user=instance.user).exists():
-            raise ValidationError("You can't voto again in the same hand")
+            raise ValidationError("You can't vote again in the same hand")
         
 
 @receiver(pre_save, sender=Hand)
@@ -61,6 +63,21 @@ def hand_set_leader(sender, instance, **kwargs):
                 instance.leader = p
 
 
+@receiver(post_save, sender=Hand)
+def hand_create_default_choose(sender, instance: Hand, created, **kwargs):
+    if created:
+        word_counter = 0
+        words_played_ids = [w.id for w in instance.game.words_played()]
+        possible_words = list(Word.objects.exclude(id__in=words_played_ids))
+        n_words = len(possible_words)
+
+        while word_counter < settings.CHOICES_PER_HAND and word_counter < n_words:
+            random_word = random.choice(possible_words)
+            Choose.objects.create(hand=instance, word=random_word)
+            possible_words.remove(random_word)
+            word_counter += 1
+
+
 @receiver(pre_save, sender=Hand)
 def hand_word_change(sender, instance, **kwargs):
     if instance.id:
@@ -72,7 +89,6 @@ def hand_word_change(sender, instance, **kwargs):
             raise ValidationError('Hand word can not be changed')
 
 
-
 @receiver(pre_save, sender=Hand)
 def hand_creation_restriction(sender, instance, **kwargs):
     game = instance.game if hasattr(instance, 'game') else None
@@ -80,4 +96,3 @@ def hand_creation_restriction(sender, instance, **kwargs):
 
     if unfinished_hand and instance.id == None:
         raise ValidationError('The previus hand must finish before another its created!')
-
