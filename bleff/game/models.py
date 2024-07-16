@@ -90,8 +90,6 @@ class Hand(models.Model):
     def save(self, *args, **kwargs):
         if self.leader and not Play.objects.filter(game=self.game, user=self.leader).exists():
             raise ValidationError("Leader can't be an User that does not belong")
-        elif self.word and self.game and not Meaning.objects.filter(word=self.word, language=self.game.idiom):
-            raise ValidationError("Word must have a Meaning in Game idiom")
         elif self.finished_at and self.finished_at < self.created_at:
             raise ValidationError('A Hand can not be finished before it starts')
         elif self.game.finished_at != None:
@@ -183,5 +181,7 @@ class Choose(models.Model):
     def save(self, *args, **kwargs):
         if self.word in self.hand.game.words_played():
             raise ValidationError('Word already played in this game')
+        elif self.word and self.hand and not Meaning.objects.filter(word=self.word, language=self.hand.game.idiom):
+            raise ValidationError("Word must have a Meaning in Game idiom")
         
         super().save(*args, **kwargs)
