@@ -7,7 +7,7 @@ from django.db.utils import IntegrityError
 from django.test import TestCase
 from django.contrib.auth.models import User
 
-from .models import Word, Language, Meaning, Game, Play, Hand, Guess, HandGuess, Vote
+from .models import Word, Language, Meaning, Game, Play, Hand, Guess, HandGuess, Vote, Choose
 from . import utils
 
 def create_word_meaning(word: str, language: Language, word_translation: str, content: str):
@@ -339,20 +339,10 @@ class HandModelTest(TestCase):
         '''
             Create a new hand without 'leader'. The leader should be setted by default as the game creator (Beacuase is the only player)
         '''
-        hand = Hand.objects.create(game=self.game, word=self.word)
-        self.assertIsNot(None, hand.leader)
+        hand = Hand.objects.create(game=self.game)
         self.assertEqual(self.game.creator.id, hand.leader.id)
 
     
-    def test_create_a_new_hand_with_no_game(self):
-        '''
-            Create a new hand without valid data (missing game).
-        '''
-        with self.assertRaises(IntegrityError):
-            hand = Hand.objects.create(leader=self.user, word=self.word)
-            hand.full_clean()
-
-
     def test_create_a_new_hand_with_a_word_without_meaning(self):
         '''
             Create a new hand with a word with no meaning in the Game idiom.
@@ -388,17 +378,6 @@ class HandModelTest(TestCase):
             hand.save()
 
 
-    def test_hand_word_realtion_is_unique(self):
-        '''
-            In a game can not appear the same word twice.
-        '''
-        first = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
-        first.finished_at = timezone.now()
-        first.save()
-        with self.assertRaises(IntegrityError):
-            Hand.objects.create(game=self.game, leader=self.user, word=self.word)
-
-
     def test_hand_can_not_be_created_if_there_is_another_unfinished(self):
         '''
             A hand can't be created if exists another with finished_at as None.
@@ -411,13 +390,12 @@ class HandModelTest(TestCase):
 
     def test_hand_leader_default_setter_rotates_players(self):
         '''
-            A hand can't be created if exists another with finished_at as None.
+            The leader changes every hand.
         '''
         Play.objects.create(game=self.game, user=self.secondaryUser)
 
-        first = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
-        first.finished_at = timezone.now()
-        first.save()
+        first = Hand.objects.create(game=self.game, leader=self.user)
+        first.end()
         
         second = Hand.objects.create(game=self.game, word=self.word_2)
         self.assertEqual(second.leader.id, self.secondaryUser.id)
@@ -428,6 +406,7 @@ class HandModelTest(TestCase):
             Sets the hand word.
         '''
         hand = Hand.objects.create(game=self.game)
+        Choose.objects.create(hand=hand, word=self.word)
         hand.word = self.word
         hand.save()
 
@@ -437,11 +416,24 @@ class HandModelTest(TestCase):
             Sets the hand word twice, not permited.
         '''
         hand = Hand.objects.create(game=self.game)
+        Choose.objects.create(hand=hand, word=self.word)
+        Choose.objects.create(hand=hand, word=self.word_2)
         hand.word = self.word
         hand.save()
 
         with self.assertRaises(ValidationError):
             hand.word = self.word_2
+            hand.save()
+
+
+    def test_set_word_without_its_choose(self):
+        '''
+            Tries to create a hand with a word that does not have 'choose'.
+        '''
+        hand = Hand.objects.create(game=self.game)
+
+        with self.assertRaises(ValidationError):
+            hand.word = self.word
             hand.save()
 
 
@@ -649,6 +641,49 @@ class VoteModelTest(TestCase):
             Vote.objects.create(to=HandGuess.objects.get(guess=self.guess), user=self.user)
 
 
+class ChooseModelTest(TestCase):
+    def setUp(self):
+        self.user = create_basic_user()
+        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.lang = create_basic_language()
+        self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+        self.word, self.meaning = create_word_meaning('House', language=self.lang, content='An explanation of what "HOUSE" is in English.', word_translation='HoUsE')
+        self.word_2, self.meaning_2 = create_word_meaning('Dou', language=self.lang, content='An explanation of what "DOU" is in English.', word_translation='DoU')
+        self.hand = Hand.objects.create(leader=self.user, game=self.game)
+
+
+    def test_create_choose(self):
+        '''
+            Test choose creation.
+        '''
+        try:
+            Choose.objects.create(hand=self.hand, word=self.word)
+        except:
+            self.fail('Valid choose could not be created.')
+
+
+    def test_create_choose_twice(self):
+        '''
+            Test cretion of two choose with the same hand and word.
+        '''
+        Choose.objects.create(hand=self.hand, word=self.word)
+        with self.assertRaises(IntegrityError):
+            Choose.objects.create(hand=self.hand, word=self.word)
+
+
+    def test_create_choose_with_a_played_word(self):
+        '''
+            Test creation of choose with a played word.
+        '''
+        Choose.objects.create(hand=self.hand, word=self.word)
+        self.hand.word = self.word
+        self.hand.end()
+
+        secondHand = Hand.objects.create(game=self.game)
+        with self.assertRaises(ValidationError):
+            Choose.objects.create(hand=secondHand, word=self.word)
+            
+
 class UtilsFunctionsTest(TestCase):
     def setUp(self):
         self.user = create_basic_user()
@@ -678,7 +713,11 @@ class UtilsFunctionsTest(TestCase):
             Test if the function to get words for a hand works when a word was selected in a previus hand.
         '''
         index = random.randint(0, len(self.words) - 1)
-        Hand.objects.create(game=self.game, word=Word.objects.get(word=self.words[index]))
+        word = Word.objects.get(word=self.words[index])
+        hand = Hand.objects.create(game=self.game)
+        Choose.objects.create(hand=hand, word=word)
+        hand.word = word
+        hand.save()
 
         function_words = [w.word for w in utils.get_game_words_choice(self.game.id, self.n_words)]
         self.assertEqual(len(function_words), self.n_words - 1)
@@ -740,8 +779,7 @@ class UtilsFunctionsTest(TestCase):
             This function should return the current hand.
         '''
         hand = Hand.objects.create(game=self.game)
-        hand.finished_at = timezone.now()
-        hand.save()
+        hand.end()
 
         second_hand = Hand.objects.create(game=self.game)
         self.assertEqual(second_hand, utils.get_game_hand(game_id=self.game.id))
