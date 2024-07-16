@@ -6,12 +6,21 @@
     <title>Bleff</title>
 </head>
 <body>
-    {% for game in object_list %}
-        <div>
-            <a href="{% url 'game:waiting' game.id %}">
-            <h1>~ Game {{game.id}} ~</h1>
-            <p>Created by: {{game.creator}}</p>
-        <div>
-    {% endfor %}
+    {% if object_list %}
+        <form action="{% url 'game:enter_game' %}" method="post">
+            {% csrf_token %}
+            <fieldset>
+                {% for game in object_list %}
+                    <div>
+                        <input type="radio" name="game" id="game{{ forloop.counter }}" value="{{ game.id }}">
+                        <label>Game {{game.id}} ~ Created by: {{game.creator}}</label>
+                    </div>
+                {% endfor %}
+            </fieldset>
+            <input type="submit" value="Enter">
+        </form>
+    {% else %}
+        <div>No games are available.</div>
+    {% endif %}
 </body>
 </html>
