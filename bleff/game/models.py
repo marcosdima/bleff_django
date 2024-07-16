@@ -36,7 +36,7 @@ class Meaning(models.Model):
 
 
 class Game(models.Model):
-    # TODO: a function to determinate who wins (winner) and another one to gets the words played (words_played). 
+    # TODO: a function to determinate who wins (winner). 
     created_at = models.DateTimeField(default=timezone.now)
     idiom = models.ForeignKey(Language, on_delete=models.PROTECT)
     creator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
@@ -51,6 +51,10 @@ class Game(models.Model):
             raise ValidationError("Can't end a game more than one time")
         self.finished_at = timezone.now()
         self.save()
+
+
+    def words_played(self):
+        return [hand.word for hand in Hand.objects.filter(game=self).exclude(word=None)]
 
 
 class Play(models.Model):
@@ -71,8 +75,8 @@ class Play(models.Model):
 class Hand(models.Model):
     # TODO: a function to determinate who is the hand winner (winner)
     created_at = models.DateTimeField(default=timezone.now)
-    finished_at = models.DateTimeField(null=True, blank=True)
-    leader = models.ForeignKey(User, on_delete=models.PROTECT) # TODO: Maybe SET_NULL could work.
+    finished_at = models.DateTimeField(null=True, blank=True, default=None)
+    leader = models.ForeignKey(User, on_delete=models.SET_NULL, default=None, null=True, blank=True)
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
     word = models.ForeignKey(Word, on_delete=models.PROTECT, null=True)
 
@@ -84,13 +88,13 @@ class Hand(models.Model):
 
 
     def save(self, *args, **kwargs):
-        if hasattr(self, 'leader') and hasattr(self, 'game') and not Play.objects.filter(game=self.game, user=self.leader).exists():
+        if self.leader and not Play.objects.filter(game=self.game, user=self.leader).exists():
             raise ValidationError("Leader can't be an User that does not belong")
-        elif hasattr(self, 'word') and self.word != None and hasattr(self, 'game') and not Meaning.objects.filter(word=self.word, language=self.game.idiom):
+        elif self.word and self.game and not Meaning.objects.filter(word=self.word, language=self.game.idiom):
             raise ValidationError("Word must have a Meaning in Game idiom")
         elif self.finished_at and self.finished_at < self.created_at:
             raise ValidationError('A Hand can not be finished before it starts')
-        elif hasattr(self, 'game') and self.game.finished_at != None:
+        elif self.game.finished_at != None:
             raise ValidationError('Can not create a game ended hand')
 
         super().save(*args, **kwargs)
@@ -163,3 +167,21 @@ class Vote(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['to', 'user'], name='unique_user_guess_vote')
         ]
+
+
+class Choose(models.Model):
+    hand = models.ForeignKey(Hand, on_delete=models.CASCADE)
+    word = models.ForeignKey(Word, on_delete=models.CASCADE)
+
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['word', 'hand'], name='choose_word_unique_per_game'),
+        ]
+
+
+    def save(self, *args, **kwargs):
+        if self.word in self.hand.game.words_played():
+            raise ValidationError('Word already played in this game')
+        
+        super().save(*args, **kwargs)
