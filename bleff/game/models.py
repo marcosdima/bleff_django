@@ -99,6 +99,9 @@ class Hand(models.Model):
     
     
     def end(self):
+        if self.finished_at:
+            raise ValidationError("Can't end a game more than one time")
+
         self.finished_at = timezone.now()
         self.save()
 
