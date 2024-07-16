@@ -9,9 +9,11 @@
     {% for user in object_list %}
         <h1>{{forloop.counter}}. {{user.username}}</h1>
     {% endfor %}
-        <form action="{% url 'game:start_game' game_id %}" method="post">
+    {% if not game.creator or game.creator.id == user.id %}
+        <form action="{% url 'game:start_game' game.id %}" method="post">
             {% csrf_token %}
             <input type="submit" value="Start Game">
         </form>
+    {% endif %}
 </body>
 </html>
