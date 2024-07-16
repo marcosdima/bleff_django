@@ -37,7 +37,7 @@ class Meaning(models.Model):
 
 class Game(models.Model):
     # TODO: a function to determinate who wins (winner) and another one to gets the words played (words_played). 
-    started_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(default=timezone.now)
     idiom = models.ForeignKey(Language, on_delete=models.PROTECT)
     creator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     finished_at = models.DateTimeField(default=None, blank=True, null=True)
@@ -70,7 +70,7 @@ class Play(models.Model):
 
 class Hand(models.Model):
     # TODO: a function to determinate who is the hand winner (winner)
-    started_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(default=timezone.now)
     finished_at = models.DateTimeField(null=True, blank=True)
     leader = models.ForeignKey(User, on_delete=models.PROTECT) # TODO: Maybe SET_NULL could work.
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
@@ -79,7 +79,7 @@ class Hand(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['word', 'game'], name='word_unique_per_game')
+            models.UniqueConstraint(fields=['word', 'game'], name='word_unique_per_game'),
         ]
 
 
@@ -88,7 +88,7 @@ class Hand(models.Model):
             raise ValidationError("Leader can't be an User that does not belong")
         elif hasattr(self, 'word') and self.word != None and hasattr(self, 'game') and not Meaning.objects.filter(word=self.word, language=self.game.idiom):
             raise ValidationError("Word must have a Meaning in Game idiom")
-        elif self.finished_at and self.finished_at < self.started_at:
+        elif self.finished_at and self.finished_at < self.created_at:
             raise ValidationError('A Hand can not be finished before it starts')
 
         super().save(*args, **kwargs)

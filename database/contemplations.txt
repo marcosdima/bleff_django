@@ -19,7 +19,7 @@ Guess:
 	
 
 Hand:
-	- 'Started_At' default value is 'now'.
+	- 'Created_at' default value is 'now'.
 	- 'Winner' should be the GUESS most voted writer.
 	- A new Game Hand mustn't be created if exists a previus Hand unfinished. 
 	- Hand Word must has a meaning in Game idiom.
