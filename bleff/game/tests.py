@@ -350,11 +350,9 @@ class HandModelTest(TestCase):
         '''
             Sets finished_at as now.
         '''
-        finished = timezone.now() + timedelta(days=1)
         hand = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
-        hand.finished_at = finished
-        hand.save()
-        self.assertEqual(finished, Hand.objects.filter(id=hand.id)[0].finished_at)
+        hand.end()
+        self.assertEqual(hand.finished_at, Hand.objects.get(id=hand.id).finished_at)
 
 
     def test_finish_hand_before_started(self):

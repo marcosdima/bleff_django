@@ -40,10 +40,16 @@ class Game(models.Model):
     started_at = models.DateTimeField(default=timezone.now)
     idiom = models.ForeignKey(Language, on_delete=models.PROTECT)
     creator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    finished_at = models.DateTimeField(default=None, blank=True, null=True)
 
     def __str__(self):
         return f'Game {self.id}: created by {self.creator.username if self.creator else "SECRET"}'
     
+
+    def end(self):
+        self.finished_at = timezone.now()
+        self.save()
+
 
 class Play(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
@@ -89,6 +95,11 @@ class Hand(models.Model):
     def __str__(self):
         return f'Hand {self.id}'
     
+    
+    def end(self):
+        self.finished_at = timezone.now()
+        self.save()
+
 
 class Guess(models.Model):
     content = models.CharField(max_length=200, validators=[MinLengthValidator(1)])
