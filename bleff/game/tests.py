@@ -321,8 +321,13 @@ class HandModelTest(TestCase):
         self.secondaryUser = User.objects.create_user(username='second', password='1234')
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
-        self.word, self.meaning = create_word_meaning('House', language=self.lang, content='An explanation of what "HOUSE" is in English.', word_translation='HoUsE')
-        self.word_2, self.meaning_2 = create_word_meaning('Dou', language=self.lang, content='An explanation of what "DOU" is in English.', word_translation='DoU')
+
+        self.words = ['Cow', 'Diary', 'Python', 'Goose', 'Cheese']
+        for word in self.words:
+            create_word_meaning(word=word, language=self.lang, content=f'An explanation of what "{word}" is in English.', word_translation=word)
+
+        self.word = Word.objects.get(word=self.words[0])
+        self.word_2 = Word.objects.get(word=self.words[1])
 
 
     def test_create_a_new_hand(self):
@@ -330,7 +335,7 @@ class HandModelTest(TestCase):
             Create a new hand with valid data.
         '''
         try:
-            Hand.objects.create(game=self.game, leader=self.user, word=self.word)
+            Hand.objects.create(game=self.game, leader=self.user)
         except ValidationError or IntegrityError:
             self.fail("Valid Hand raised an error")
 
@@ -342,15 +347,7 @@ class HandModelTest(TestCase):
         hand = Hand.objects.create(game=self.game)
         self.assertEqual(self.game.creator.id, hand.leader.id)
 
-    
-    def test_create_a_new_hand_with_a_word_without_meaning(self):
-        '''
-            Create a new hand with a word with no meaning in the Game idiom.
-        '''
-        with self.assertRaises(ValidationError):
-            Hand.objects.create(leader=self.user, game=self.game, word=Word.objects.create(word='AnyWord'))
-
-
+            
     def test_create_a_new_hand_with_an_outsider_as_leader(self):
         '''
             Create a new hand with a leader that does not belong to Game.
@@ -401,12 +398,42 @@ class HandModelTest(TestCase):
         self.assertEqual(second.leader.id, self.secondaryUser.id)
 
 
+    def test_set_default_choose(self):
+        '''
+            Test if the default creation of choose works.
+        '''
+        hand = Hand.objects.create(game=self.game)
+        words = [c.word for c in Choose.objects.filter(hand=hand)]
+        self.assertEqual(len(words), len(self.words))
+
+        for word in words:
+            self.assertTrue(word.word in self.words)
+
+
+    def test_set_default_choose_when_exists_a_previus_hand(self):
+        '''
+            Test if the default creation of choose works when a word was selected in a previus hand.
+        '''
+        index = random.randint(0, len(self.words) - 1)
+        word = Word.objects.get(word=self.words[index])
+        hand = Hand.objects.create(game=self.game)
+
+        hand.word = word
+        hand.save()
+        hand.end()
+
+        secondHand = Hand.objects.create(game=self.game)
+        choose_values = Choose.objects.filter(hand=secondHand)
+
+        self.assertEqual(len(choose_values), len(self.words) - 1)
+        self.assertFalse(self.words[index] in choose_values)
+        
+
     def test_hand_word_set(self):
         '''
             Sets the hand word.
         '''
         hand = Hand.objects.create(game=self.game)
-        Choose.objects.create(hand=hand, word=self.word)
         hand.word = self.word
         hand.save()
 
@@ -416,8 +443,6 @@ class HandModelTest(TestCase):
             Sets the hand word twice, not permited.
         '''
         hand = Hand.objects.create(game=self.game)
-        Choose.objects.create(hand=hand, word=self.word)
-        Choose.objects.create(hand=hand, word=self.word_2)
         hand.word = self.word
         hand.save()
 
@@ -433,7 +458,7 @@ class HandModelTest(TestCase):
         hand = Hand.objects.create(game=self.game)
 
         with self.assertRaises(ValidationError):
-            hand.word = self.word
+            hand.word = Word.objects.create(word='DoesNotExists')
             hand.save()
 
 
@@ -647,9 +672,9 @@ class ChooseModelTest(TestCase):
         self.secondaryUser = User.objects.create_user(username='second', password='1234')
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+        self.hand = Hand.objects.create(leader=self.user, game=self.game)
         self.word, self.meaning = create_word_meaning('House', language=self.lang, content='An explanation of what "HOUSE" is in English.', word_translation='HoUsE')
         self.word_2, self.meaning_2 = create_word_meaning('Dou', language=self.lang, content='An explanation of what "DOU" is in English.', word_translation='DoU')
-        self.hand = Hand.objects.create(leader=self.user, game=self.game)
 
 
     def test_create_choose(self):
@@ -684,57 +709,23 @@ class ChooseModelTest(TestCase):
             Choose.objects.create(hand=secondHand, word=self.word)
             
 
+    def test_create_a_new_choose_with_a_word_without_meaning(self):
+        '''
+            Create a new choose with a word with no meaning in the Game idiom.
+        '''
+        anyWord = Word.objects.create(word='AnyWord')
+
+        with self.assertRaises(ValidationError):
+            Choose.objects.create(hand=self.hand, word=anyWord)
+
+
 class UtilsFunctionsTest(TestCase):
     def setUp(self):
         self.user = create_basic_user()
         self.secondaryUser = User.objects.create_user(username='second', password='1234')
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
-
-        self.words = ['Cow', 'Diary', 'Python', 'Goose', 'Cheese']
-        self.n_words = 5
-        for word in self.words:
-            create_word_meaning(word, language=self.lang, content=f'An explanation of what "{word}" is in English.', word_translation=word)
     
-
-    def test_get_game_word_choice(self):
-        '''
-            Test if the function to get words for a hand works.
-        '''
-        function_words = [w.word for w in utils.get_game_words_choice(self.game.id, self.n_words)]
-        self.assertEqual(len(function_words), self.n_words)
-
-        for word in function_words:
-            self.assertTrue(word in self.words)
-
-
-    def test_get_game_word_choice_when_exists_a_previus_hand(self):
-        '''
-            Test if the function to get words for a hand works when a word was selected in a previus hand.
-        '''
-        index = random.randint(0, len(self.words) - 1)
-        word = Word.objects.get(word=self.words[index])
-        hand = Hand.objects.create(game=self.game)
-        Choose.objects.create(hand=hand, word=word)
-        hand.word = word
-        hand.save()
-
-        function_words = [w.word for w in utils.get_game_words_choice(self.game.id, self.n_words)]
-        self.assertEqual(len(function_words), self.n_words - 1)
-
-        for word in function_words:
-            self.assertTrue(word in self.words)
-
-        self.assertFalse(self.words[index] in function_words)
-        
-
-    def test_get_game_word_choice_when_there_are_no_words(self):
-        '''
-            If there are no words in the game idiom, then should return an empty list.
-        '''
-        game = Game.objects.create(creator=self.secondaryUser, idiom=Language.objects.create(tag='DOESNT', name='EXISTS'))
-        self.assertListEqual(utils.get_game_words_choice(game_id=game.id, n_words=self.n_words) ,[])
-
 
     def test_plays_game_function_should_be_true(self):
         '''
