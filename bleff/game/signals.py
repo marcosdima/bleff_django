@@ -2,7 +2,7 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.forms import ValidationError
 
-from .models import Game, Play, Hand, Guess, Meaning, HandGuess, Vote
+from .models import Game, Play, Hand, Guess, Meaning, HandGuess, Vote, Choose
 
 @receiver(post_save, sender=Game)
 def creator_play_creation(sender, instance, created, **kwargs):
@@ -48,7 +48,7 @@ def play_creator_restriction(sender, instance, **kwargs):
 
 @receiver(pre_save, sender=Hand)
 def hand_set_leader(sender, instance, **kwargs):
-    if not hasattr(instance, 'leader'):
+    if not instance.leader:
         # Gets game players.
         players = [p.user for p in Play.objects.filter(game=instance.game)]
 
@@ -62,11 +62,13 @@ def hand_set_leader(sender, instance, **kwargs):
 
 
 @receiver(pre_save, sender=Hand)
-def hand_word_change_again(sender, instance, **kwargs):
+def hand_word_change(sender, instance, **kwargs):
     if instance.id:
         previus = Hand.objects.get(id=instance.id)
 
-        if previus.word != None and previus.word != instance.word:
+        if previus.word != instance.word and not Choose.objects.filter(hand=instance, word=instance.word):
+            raise ValidationError('Should exists a choose for this word to set it')
+        elif previus.word != None and previus.word != instance.word:
             raise ValidationError('Hand word can not be changed')
 
 
