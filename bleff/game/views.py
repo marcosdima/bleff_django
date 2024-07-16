@@ -1,5 +1,7 @@
 from django.db import IntegrityError
-from django.shortcuts import redirect
+from django.http import HttpResponseRedirect
+from django.shortcuts import render, redirect
+from django.urls import reverse
 from django.views import generic
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
@@ -7,7 +9,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.http import require_POST
 
 from .models import Game, Play, Hand
-from .utils import plays_game
+from .utils import plays_game, get_game_hand
 
 class IndexView(generic.ListView):
     model=Game
@@ -17,20 +19,16 @@ class IndexView(generic.ListView):
 class WaitingView(LoginRequiredMixin, generic.ListView):
     model=User
     template_name = "game/waiting.html"
-    game_id = ''
 
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        
-        context['game_id'] = self.kwargs.get('game_id')
-        
+        context = super().get_context_data(**kwargs)    
+        context['game_id'] = self.kwargs.get('game_id') 
         return context
 
 
     def get_queryset(self): 
         id = self.kwargs.get('game_id')
-        self.game_id = id
         return [p.user for p in Play.objects.filter(game=id)]
     
 
@@ -53,20 +51,27 @@ def enter_game(request):
     return redirect('game:index')
 
 
+@login_required
+@require_POST
 def start_game(request, game_id):
     game = Game.objects.get(pk=game_id)
     
     alreadyEnded = game.finished_at != None
     alreadyStarted = Hand.objects.filter(game=game).exists()
 
-    if alreadyEnded:
+    if alreadyEnded or not plays_game(user=request.user, game_id=game_id):
+        # If the game already ended or user does not play 'game_id' game, redirects to index.
         return redirect('game:index')
     elif alreadyStarted:
-        # TODO: In this case it should send the user to the actual hand.
-        pass
+        return HttpResponseRedirect(reverse("game:hand", args=(game.id,)))
     elif not game.creator or game.creator.id == request.user.id:
-        # TODO: The creator says 'START THE GAME!', so it should start.
-        pass
-
+        Hand.objects.create(game=game)
+        return HttpResponseRedirect(reverse("game:hand", args=(game.id,)))
+        
     return redirect('game:waiting', game_id=game_id)
- 
+
+
+@login_required
+def hand_view(request, game_id):
+    hand = get_game_hand(game_id)
+    return render(request, 'game/hand.html', {"hand": hand})
