@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.http import require_POST
 
-from .models import Game, Play, Hand
+from .models import Game, Play, Hand, Word
 from .utils import plays_game, get_game_hand, get_hand_choice_words
 from .decorators import play_required
 
@@ -62,7 +62,7 @@ def enter_game(request):
     try:
         Play.objects.create(game=game, user=request.user)
     except Exception as e:
-        # TODO: message error and validation of 'user is already playin another game'.
+        # TODO: message error
         print(e)
         return handle_redirection(request=request)
 
@@ -94,7 +94,29 @@ def hand_view(request, game_id):
     hand = get_game_hand(game_id)
     words = []
 
-    if request.user.id == hand.leader.id:
+    if request.user.id == hand.leader.id and not hand.word:
         words = get_hand_choice_words(hand=hand)
 
     return render(request, 'game/hand.html', {"hand": hand, "words_to_choose": words})
+
+
+@login_required
+@require_POST
+@play_required(handle_redirection)
+def choose_word(request, game_id):
+    choice = request.POST['choice']
+
+    # If the chosen word does not exists.
+    if not Word.objects.filter(word=choice).exists():
+        return handle_redirection(request=request)
+    
+    hand = get_game_hand(game_id=game_id)
+    try:
+        hand.word = Word.objects.get(word=choice)
+        hand.save()
+    except Exception as e:
+        # TODO: message error
+        print(e)
+        return handle_redirection(request=request)
+        
+    return HttpResponseRedirect(reverse("game:hand", args=(game_id,)))
