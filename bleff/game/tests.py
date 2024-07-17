@@ -7,7 +7,7 @@ from django.db.utils import IntegrityError
 from django.test import TestCase
 from django.contrib.auth.models import User
 
-from .models import Word, Language, Meaning, Game, Play, Hand, Guess, HandGuess, Vote, Choose
+from .models import Word, Language, Meaning, Game, Play, Hand, Guess, HandGuess, Vote, Choice
 from . import utils
 
 def create_word_meaning(word: str, language: Language, word_translation: str, content: str):
@@ -398,21 +398,21 @@ class HandModelTest(TestCase):
         self.assertEqual(second.leader.id, self.secondaryUser.id)
 
 
-    def test_set_default_choose(self):
+    def test_set_default_choice(self):
         '''
-            Test if the default creation of choose works.
+            Test if the default creation of choice works.
         '''
         hand = Hand.objects.create(game=self.game)
-        words = [c.word for c in Choose.objects.filter(hand=hand)]
+        words = [c.word for c in Choice.objects.filter(hand=hand)]
         self.assertEqual(len(words), len(self.words))
 
         for word in words:
             self.assertTrue(word.word in self.words)
 
 
-    def test_set_default_choose_when_exists_a_previus_hand(self):
+    def test_set_default_choice_when_exists_a_previus_hand(self):
         '''
-            Test if the default creation of choose works when a word was selected in a previus hand.
+            Test if the default creation of choice works when a word was selected in a previus hand.
         '''
         index = random.randint(0, len(self.words) - 1)
         word = Word.objects.get(word=self.words[index])
@@ -423,10 +423,10 @@ class HandModelTest(TestCase):
         hand.end()
 
         secondHand = Hand.objects.create(game=self.game)
-        choose_values = Choose.objects.filter(hand=secondHand)
+        choice_values = Choice.objects.filter(hand=secondHand)
 
-        self.assertEqual(len(choose_values), len(self.words) - 1)
-        self.assertFalse(self.words[index] in choose_values)
+        self.assertEqual(len(choice_values), len(self.words) - 1)
+        self.assertFalse(self.words[index] in choice_values)
         
 
     def test_hand_word_set(self):
@@ -451,9 +451,9 @@ class HandModelTest(TestCase):
             hand.save()
 
 
-    def test_set_word_without_its_choose(self):
+    def test_set_word_without_its_choice(self):
         '''
-            Tries to create a hand with a word that does not have 'choose'.
+            Tries to create a hand with a word that does not have 'choice'.
         '''
         hand = Hand.objects.create(game=self.game)
 
@@ -666,7 +666,7 @@ class VoteModelTest(TestCase):
             Vote.objects.create(to=HandGuess.objects.get(guess=self.guess), user=self.user)
 
 
-class ChooseModelTest(TestCase):
+class ChoiceModelTest(TestCase):
     def setUp(self):
         self.user = create_basic_user()
         self.secondaryUser = User.objects.create_user(username='second', password='1234')
@@ -677,46 +677,46 @@ class ChooseModelTest(TestCase):
         self.word_2, self.meaning_2 = create_word_meaning('Dou', language=self.lang, content='An explanation of what "DOU" is in English.', word_translation='DoU')
 
 
-    def test_create_choose(self):
+    def test_create_choice(self):
         '''
-            Test choose creation.
+            Test choice creation.
         '''
         try:
-            Choose.objects.create(hand=self.hand, word=self.word)
+            Choice.objects.create(hand=self.hand, word=self.word)
         except:
-            self.fail('Valid choose could not be created.')
+            self.fail('Valid choice could not be created.')
 
 
-    def test_create_choose_twice(self):
+    def test_create_choice_twice(self):
         '''
-            Test cretion of two choose with the same hand and word.
+            Test cretion of two choice with the same hand and word.
         '''
-        Choose.objects.create(hand=self.hand, word=self.word)
+        Choice.objects.create(hand=self.hand, word=self.word)
         with self.assertRaises(IntegrityError):
-            Choose.objects.create(hand=self.hand, word=self.word)
+            Choice.objects.create(hand=self.hand, word=self.word)
 
 
-    def test_create_choose_with_a_played_word(self):
+    def test_create_choice_with_a_played_word(self):
         '''
-            Test creation of choose with a played word.
+            Test creation of choice with a played word.
         '''
-        Choose.objects.create(hand=self.hand, word=self.word)
+        Choice.objects.create(hand=self.hand, word=self.word)
         self.hand.word = self.word
         self.hand.end()
 
         secondHand = Hand.objects.create(game=self.game)
         with self.assertRaises(ValidationError):
-            Choose.objects.create(hand=secondHand, word=self.word)
+            Choice.objects.create(hand=secondHand, word=self.word)
             
 
-    def test_create_a_new_choose_with_a_word_without_meaning(self):
+    def test_create_a_new_choice_with_a_word_without_meaning(self):
         '''
-            Create a new choose with a word with no meaning in the Game idiom.
+            Create a new choice with a word with no meaning in the Game idiom.
         '''
         anyWord = Word.objects.create(word='AnyWord')
 
         with self.assertRaises(ValidationError):
-            Choose.objects.create(hand=self.hand, word=anyWord)
+            Choice.objects.create(hand=self.hand, word=anyWord)
 
 
 class UtilsFunctionsTest(TestCase):

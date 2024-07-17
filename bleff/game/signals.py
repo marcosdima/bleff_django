@@ -4,7 +4,7 @@ from django.dispatch import receiver
 from django.forms import ValidationError
 from django.conf import settings
 
-from .models import Game, Play, Hand, Guess, Meaning, HandGuess, Vote, Choose, Word
+from .models import Game, Play, Hand, Guess, Meaning, HandGuess, Vote, Choice, Word
 
 @receiver(post_save, sender=Game)
 def play_creation_creator(sender, instance, created, **kwargs):
@@ -64,7 +64,7 @@ def hand_set_leader(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=Hand)
-def hand_create_default_choose(sender, instance: Hand, created, **kwargs):
+def hand_create_default_choice(sender, instance: Hand, created, **kwargs):
     if created:
         word_counter = 0
         words_played_ids = [w.id for w in instance.game.words_played()]
@@ -73,7 +73,7 @@ def hand_create_default_choose(sender, instance: Hand, created, **kwargs):
 
         while word_counter < settings.CHOICES_PER_HAND and word_counter < n_words:
             random_word = random.choice(possible_words)
-            Choose.objects.create(hand=instance, word=random_word)
+            Choice.objects.create(hand=instance, word=random_word)
             possible_words.remove(random_word)
             word_counter += 1
 
@@ -83,8 +83,8 @@ def hand_word_change(sender, instance, **kwargs):
     if instance.id:
         previus = Hand.objects.get(id=instance.id)
 
-        if previus.word != instance.word and not Choose.objects.filter(hand=instance, word=instance.word):
-            raise ValidationError('Should exists a choose for this word to set it')
+        if previus.word != instance.word and not Choice.objects.filter(hand=instance, word=instance.word):
+            raise ValidationError('Should exists a choice for this word to set it')
         elif previus.word != None and previus.word != instance.word:
             raise ValidationError('Hand word can not be changed')
 

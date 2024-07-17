@@ -167,14 +167,14 @@ class Vote(models.Model):
         ]
 
 
-class Choose(models.Model):
+class Choice(models.Model):
     hand = models.ForeignKey(Hand, on_delete=models.CASCADE)
     word = models.ForeignKey(Word, on_delete=models.CASCADE)
 
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['word', 'hand'], name='choose_word_unique_per_game'),
+            models.UniqueConstraint(fields=['word', 'hand'], name='choice_word_unique_per_game'),
         ]
 
 
