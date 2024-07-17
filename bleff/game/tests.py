@@ -808,3 +808,74 @@ class GameViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "No games are available.")
         self.assertQuerySetEqual(response.context["object_list"], [])
+
+
+class EnterGameViewTest(TestCase):
+    def setUp(self):
+        self.user = create_basic_user()
+        self.lang = create_basic_language()
+        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.game = Game.objects.create(creator=self.user, idiom=self.lang)
+
+    
+    def test_enter_game(self):
+        '''
+            This shouldn't create a play, because by default it's created for the game creator, and redirect the user to waiting.
+        '''
+        self.client.login(username="root_test", password="password")
+        response = self.client.post(path=reverse('game:enter_game'), data={'game': self.game.id})
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith(f'/game/{self.game.id}/'))
+        self.assertEqual(Play.objects.filter(game=self.game).count(), 1)
+
+
+    def test_enter_game_not_as_creator(self):
+        '''
+            This should create a play with this user and redirect the user to waiting.
+        '''
+        self.client.login(username='second', password='1234')
+        response = self.client.post(path=reverse('game:enter_game'), data={'game': self.game.id})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith(f'/game/{self.game.id}/'))
+        self.assertEqual(Play.objects.filter(game=self.game).count(), 2)
+
+
+class WaitingViewTests(TestCase):
+    def setUp(self):
+        self.user = create_basic_user()
+        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.lang = create_basic_language()
+        self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+
+
+    def test_waiting_view(self):
+        '''
+            The view should display a list with one element, the game creator.
+        '''
+        self.client.login(username="root_test", password="password")
+
+        response = self.client.get(reverse('game:waiting', args=[self.game.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerySetEqual(response.context["object_list"], [self.user])
+
+
+    def test_waiting_view_with_two_players(self):
+        '''
+            The view should display a list with game users.
+        '''
+        self.client.login(username='second', password='1234')
+        Play.objects.create(game=self.game, user=self.secondaryUser)
+
+        response = self.client.get(reverse('game:waiting', args=[self.game.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerySetEqual(response.context["object_list"], [self.user, self.secondaryUser])
+
+    
+    def test_waiting_view_with_no_login(self):
+        '''
+            The view should redirect you to login view.
+        '''
+        response = self.client.get(reverse('game:waiting', args=[self.game.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith('/users/login/'))
