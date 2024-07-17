@@ -1,4 +1,3 @@
-from django.db import IntegrityError
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.urls import reverse
@@ -10,6 +9,7 @@ from django.views.decorators.http import require_POST
 
 from .models import Game, Play, Hand
 from .utils import plays_game, get_game_hand, get_hand_choice_words
+from .decorators import play_required
 
 def handle_redirection(request):
     # If does not exists a Play with this user and a game unfinished.
@@ -71,13 +71,14 @@ def enter_game(request):
 
 @login_required
 @require_POST
+@play_required(handle_redirection)
 def start_game(request, game_id):
     game = Game.objects.get(pk=game_id)
 
     alreadyEnded = game.finished_at != None
     alreadyStarted = Hand.objects.filter(game=game).exists()
 
-    if alreadyEnded or not plays_game(user=request.user, game_id=game_id):
+    if alreadyEnded:
         # If the game already ended or user does not play 'game_id' game, redirects to index.
         return handle_redirection(request=request)
     
@@ -88,6 +89,7 @@ def start_game(request, game_id):
 
 
 @login_required
+@play_required(handle_redirection)
 def hand_view(request, game_id):
     hand = get_game_hand(game_id)
     words = []
