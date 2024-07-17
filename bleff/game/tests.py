@@ -810,8 +810,8 @@ class UtilsFunctionsTest(TestCase):
         hand.end()
 
         second_hand = Hand.objects.create(game=self.game)
-        choices = utils.get_hand_choice_words(hand)
-        for w in utils.get_hand_choice_words(second_hand):
+        choices = utils.get_hand_choice_words(second_hand)
+        for w in choices:
             self.assertTrue(w.word in self.words)
 
         self.assertFalse(word_target in choices)
@@ -856,11 +856,15 @@ class EnterGameViewTest(TestCase):
         '''
             This shouldn't create a play, because by default it's created for the game creator, and redirect the user to waiting.
         '''
+        self.assertEqual(Play.objects.filter(game=self.game).count(), 1)
+
         self.client.login(username="root_test", password="password")
         response = self.client.post(path=reverse('game:enter_game'), data={'game': self.game.id})
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.url.startswith(f'/game/{self.game.id}/'))
+        self.assertEqual(response.url, reverse('game:waiting', args=[self.game.id]))
+
         self.assertEqual(Play.objects.filter(game=self.game).count(), 1)
+        
 
 
     def test_enter_game_not_as_creator(self):
@@ -982,7 +986,6 @@ class HandViewTests(TestCase):
         self.secondaryUser = User.objects.create_user(username='second', password='1234')
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
-        Play.objects.create(game=self.game, user=self.user)
 
         self.words = ['Cow', 'Diary', 'Python', 'Goose', 'Cheese']
         for word in self.words:
@@ -992,4 +995,39 @@ class HandViewTests(TestCase):
         self.word_2 = Word.objects.get(word=self.words[1])
 
 
-    #def test_hand_view(self):
+    def test_hand_view_as_leader(self):
+        '''
+            This view should display a list of words to choose.
+        '''
+        self.client.login(username="root_test", password="password")
+        Hand.objects.create(game=self.game, leader=self.user)
+        response = self.client.get(path=reverse('game:hand', args=[self.game.id]))
+        self.assertEqual(response.status_code, 200)
+
+        for word in self.words:
+            self.assertContains(response, self.word.word)
+
+
+    def test_hand_view_as_not_leader(self):
+        '''
+            This view should display a message.
+        '''
+        Play.objects.create(game=self.game, user=self.secondaryUser)
+        self.client.login(username='second', password='1234')
+        hand = Hand.objects.create(game=self.game, leader=self.user)
+        response = self.client.get(path=reverse('game:hand', args=[self.game.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, self.words.__str__())
+        self.assertContains(response, f'Waiting {hand.leader} to choose a word')
+
+    
+    def test_hand_view_but_you_do_not_playing_a_game(self):
+        '''
+            This view should display a message.
+        '''
+        self.client.login(username='second', password='1234')
+        Hand.objects.create(game=self.game, leader=self.user)
+        response = self.client.get(path=reverse('game:hand', args=[self.game.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('game:index'))
+        
