@@ -725,6 +725,13 @@ class UtilsFunctionsTest(TestCase):
         self.secondaryUser = User.objects.create_user(username='second', password='1234')
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+
+        self.words = ['Cow', 'Diary', 'Python', 'Goose', 'Cheese']
+        for word in self.words:
+            create_word_meaning(word=word, language=self.lang, content=f'An explanation of what "{word}" is in English.', word_translation=word)
+
+        self.word = Word.objects.get(word=self.words[0])
+        self.word_2 = Word.objects.get(word=self.words[1])
     
 
     def test_plays_game_function_should_be_true(self):
@@ -781,6 +788,33 @@ class UtilsFunctionsTest(TestCase):
             This function should return the current hand.
         '''
         self.assertEqual(None, utils.get_game_hand(game_id=self.game.id))
+
+
+    def test_get_hand_choice_words(self):
+        '''
+            Test 'get_hand_choice_words' function
+        '''
+        hand = Hand.objects.create(game=self.game)
+        for w in utils.get_hand_choice_words(hand):
+            self.assertTrue(w.word in self.words)
+
+
+    def test_get_hand_choice_words_after_a_word_was_used(self):
+        '''
+            Test 'get_hand_choice_words' function when a word was used before in the game.
+        '''
+        hand = Hand.objects.create(game=self.game)
+        word_target = utils.get_hand_choice_words(hand)[0]
+        hand.word = word_target
+        hand.save()
+        hand.end()
+
+        second_hand = Hand.objects.create(game=self.game)
+        choices = utils.get_hand_choice_words(hand)
+        for w in utils.get_hand_choice_words(second_hand):
+            self.assertTrue(w.word in self.words)
+
+        self.assertFalse(word_target in choices)
 
 
 class GameViewTests(TestCase):
@@ -879,3 +913,22 @@ class WaitingViewTests(TestCase):
         response = self.client.get(reverse('game:waiting', args=[self.game.id]))
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response.url.startswith('/users/login/'))
+
+
+class HandViewTests(TestCase):
+    def setUp(self):
+        self.user = create_basic_user()
+        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.lang = create_basic_language()
+        self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+        Play.objects.create(game=self.game, user=self.user)
+
+        self.words = ['Cow', 'Diary', 'Python', 'Goose', 'Cheese']
+        for word in self.words:
+            create_word_meaning(word=word, language=self.lang, content=f'An explanation of what "{word}" is in English.', word_translation=word)
+
+        self.word = Word.objects.get(word=self.words[0])
+        self.word_2 = Word.objects.get(word=self.words[1])
+
+
+    #def test_hand_view(self):
