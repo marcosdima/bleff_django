@@ -866,7 +866,6 @@ class EnterGameViewTest(TestCase):
         self.assertEqual(Play.objects.filter(game=self.game).count(), 1)
         
 
-
     def test_enter_game_not_as_creator(self):
         '''
             This should create a play with this user and redirect the user to waiting.
@@ -1030,4 +1029,16 @@ class HandViewTests(TestCase):
         response = self.client.get(path=reverse('game:hand', args=[self.game.id]))
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('game:index'))
-        
+
+
+    def test_hand_view_with_chosen_word(self):
+        '''
+            If a word was chosen, then even the leader should not have word to choose.
+        '''
+        self.client.login(username="root_test", password="password")
+        hand = Hand.objects.create(game=self.game, leader=self.user)
+        hand.word = self.word
+
+        response = self.client.get(path=reverse('game:hand', args=[self.game.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, self.words.__str__())
