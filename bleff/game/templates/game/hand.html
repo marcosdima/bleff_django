@@ -6,7 +6,20 @@
     <title>Bleff</title>
 </head>
 <body>
-    {% if not hand.word %}
+    {% if words_to_choose %}
+        <form action="{% url 'game:choose' hand.game.id %}" method="post">
+            {% csrf_token %}
+            <fieldset>
+                {% for choice in words_to_choose %}
+                    <div>
+                        <input type="radio" name="choice" id="choice{{ forloop.counter }}" value="{{ choice }}">
+                        <label>{{choice}}</label>
+                    </div>
+                {% endfor %}
+            </fieldset>
+            <input type="submit" value="Choose">
+        </form>
+    {% elif not hand.word %}
         <div>Waiting {{hand.leader}} to choose a word</div>
     {% else %}
         <div>This hand word is {{hand.word}}!</div>
