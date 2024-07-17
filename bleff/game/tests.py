@@ -915,6 +915,67 @@ class WaitingViewTests(TestCase):
         self.assertTrue(response.url.startswith('/users/login/'))
 
 
+class StartGameViewTest(TestCase):
+    def setUp(self):
+        self.user = create_basic_user()
+        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.lang = create_basic_language()
+        self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+
+
+    def test_start_game_view(self):
+        '''
+            The view should create the first hand and redirect the user to hand view.
+        '''
+        self.client.login(username="root_test", password="password")
+        response = self.client.post(reverse('game:start_game', args=[self.game.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('game:hand', args=[self.game.id]))
+        self.assertEqual(Hand.objects.filter(game=self.game).count(), 1)
+
+
+    def test_start_game_view_but_your_are_not_the_creator(self):
+        '''
+            The view should redirect the user to waiting.
+        '''
+        Play.objects.create(game=self.game, user=self.secondaryUser)
+        self.client.login(username='second', password='1234')
+        
+        response = self.client.post(reverse('game:start_game', args=[self.game.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url, reverse('game:waiting', args=[self.game.id]))
+        self.assertEqual(Hand.objects.filter(game=self.game).count(), 0)
+
+
+    def test_start_game_view_but_creator_is_null(self):
+        '''
+            The view should create the first hand and redirect the user to hand view.
+        '''
+        Play.objects.create(game=self.game, user=self.secondaryUser)
+
+        self.game.creator = None
+        self.game.save()
+
+        self.client.login(username='second', password='1234')
+        response = self.client.post(reverse('game:start_game', args=[self.game.id]))
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('game:hand', args=[self.game.id]))
+        self.assertEqual(Hand.objects.filter(game=self.game).count(), 1)
+
+
+    def test_start_game_view_but_your_are_not_playing(self):
+        '''
+            The view should create the first hand and redirect the user to hand view.
+        '''
+        self.client.login(username='second', password='1234')
+        response = self.client.post(reverse('game:start_game', args=[self.game.id]))
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('game:index'))
+        self.assertEqual(Hand.objects.filter(game=self.game).count(), 0)
+
+
 class HandViewTests(TestCase):
     def setUp(self):
         self.user = create_basic_user()
