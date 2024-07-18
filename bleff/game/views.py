@@ -8,8 +8,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.http import require_POST
 
 from .models import Game, HandGuess, Play, Hand, Vote, Word, Guess
-from .utils import plays_game, get_game_hand, get_hand_choice_words, remove_fields
-from .decorators import play_required, leader_required
+from .utils import plays_game, get_game_hand, get_hand_choice_words, remove_fields, conditions_are_met
+from .decorators import play_required, leader_required, conditions_met
 
 def handle_redirection(request):
     # If does not exists a Play with this user and a game unfinished.
@@ -17,8 +17,12 @@ def handle_redirection(request):
     if not is_playing_something:
         return redirect('game:index')
 
-    # If exists a game, but does not start yet.
+    # If exists a game, but does not met the conditions.
     game = is_playing_something[0].game
+    if len(conditions_are_met(game_id=game.id)) > 0:
+        return redirect('game:waiting', game_id=game.id)
+
+    # If exists a game, but does not start yet.
     game_start = Hand.objects.filter(game=game).exists()
     if not game_start:
         return redirect('game:waiting', game_id=game.id)
@@ -98,6 +102,7 @@ def enter_game(request):
 @login_required
 @require_POST
 @play_required(handle_redirection)
+@conditions_met(handle_redirection)
 def start_game(request, game_id):
     game = Game.objects.get(pk=game_id)
 
@@ -116,6 +121,7 @@ def start_game(request, game_id):
 
 @login_required
 @play_required(handle_redirection)
+@conditions_met(handle_redirection)
 def hand_view(request, game_id):
     hand = get_game_hand(game_id)
     words = []
@@ -130,6 +136,7 @@ def hand_view(request, game_id):
 @require_POST
 @play_required(handle_redirection)
 @leader_required(handle_redirection)
+@conditions_met(handle_redirection)
 def choose_word(request, game_id):
     choice = request.POST['choice']
 
@@ -153,6 +160,7 @@ def choose_word(request, game_id):
 @login_required
 @require_POST
 @play_required(handle_redirection)
+@conditions_met(handle_redirection)
 def make_guess(request, game_id):
     guess = request.POST['guess']
     hand = get_game_hand(game_id=game_id)
@@ -170,6 +178,7 @@ def make_guess(request, game_id):
 @login_required
 @require_POST
 @play_required(handle_redirection)
+@conditions_met(handle_redirection)
 def vote(request, game_id):
     guess = get_object_or_404(Guess, writer=request.user, hand=get_game_hand(game_id=game_id))
     guess_hand = get_object_or_404(HandGuess, guess=guess)

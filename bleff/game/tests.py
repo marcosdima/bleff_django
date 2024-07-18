@@ -1060,6 +1060,17 @@ class StartGameViewTest(TestCase):
         self.assertEqual(Hand.objects.filter(game=self.game).count(), 0)
 
 
+    def test_start_game_but_conditions_are_not_met(self):
+        '''
+            The game does not met the conditions setted, so should stay in waiting 
+        '''
+        login_root_user(self)
+        Condition.objects.create(game=self.game, tag=ConditionTag.objects.create(tag="MIN_PLAYERS"), value=5)
+        response = self.client.post(reverse('game:start_game', args=[self.game.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('game:waiting', args=[self.game.id]))
+
+
 class HandViewTest(TestCase):
     def setUp(self):
         self.user = create_root_user()
