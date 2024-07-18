@@ -839,7 +839,7 @@ class UtilsFunctionsTest(TestCase):
             self.assertEqual(self.lang.tag, language.tag)
 
 
-class GameViewTests(TestCase):
+class GameViewTest(TestCase):
     def setUp(self):
         self.user = create_basic_user()
         self.lang = create_basic_language()
@@ -900,7 +900,7 @@ class EnterGameViewTest(TestCase):
         self.assertEqual(Play.objects.filter(game=self.game).count(), 2)
 
 
-class WaitingViewTests(TestCase):
+class WaitingViewTest(TestCase):
     def setUp(self):
         self.user = create_basic_user()
         self.secondaryUser = User.objects.create_user(username='second', password='1234')
@@ -1001,7 +1001,7 @@ class StartGameViewTest(TestCase):
         self.assertEqual(Hand.objects.filter(game=self.game).count(), 0)
 
 
-class HandViewTests(TestCase):
+class HandViewTest(TestCase):
     def setUp(self):
         self.user = create_basic_user()
         self.secondaryUser = User.objects.create_user(username='second', password='1234')
@@ -1064,3 +1064,70 @@ class HandViewTests(TestCase):
         response = self.client.get(path=reverse('game:hand', args=[self.game.id]))
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, self.words.__str__())
+
+
+class ChooseViewTest(TestCase):
+    def setUp(self):
+        self.user = create_basic_user()
+        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.lang = create_basic_language()
+        self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+
+        self.words = ['Cow', 'Diary', 'Python', 'Goose', 'Cheese']
+        for word in self.words:
+            create_word_meaning(word=word, language=self.lang, content=f'An explanation of what "{word}" is in English.', word_translation=word)
+
+        self.word = Word.objects.get(word=self.words[0])
+        self.word_2 = Word.objects.get(word=self.words[1])
+
+        self.hand = Hand.objects.create(game=self.game, leader=self.user)
+
+
+    def test_choose_a_word(self):
+        '''
+            Choose the hand word.
+        '''
+        self.client.login(username="root_test", password="password")
+        response = self.client.post(path=reverse('game:choose', args=[self.game.id]), data={'choice': self.word.word})
+
+        self.assertEqual(response.url, reverse('game:hand', args=[self.game.id]))
+        self.assertEqual(Hand.objects.get(id=self.hand.id).word, self.word)
+
+
+    def test_choose_a_word_but_you_are_not_the_leader(self):
+        '''
+            Only the leader can choose.
+        '''
+        Play.objects.create(game=self.game, user=self.secondaryUser)
+        self.client.login(username='second', password='1234')
+        response = self.client.post(path=reverse('game:choose', args=[self.game.id]), data={'choice': self.word.word})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('game:hand', args=[self.game.id]))
+        self.assertEqual(Hand.objects.get(id=self.hand.id).word, None)
+
+
+    def test_choose_a_word_but_you_are_not_playing(self):
+        '''
+            If you are not playing any game, then it should send you to index.
+        '''
+        self.client.login(username='second', password='1234')
+        response = self.client.post(path=reverse('game:choose', args=[self.game.id]), data={'choice': self.word.word})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('game:index'))
+        self.assertEqual(Hand.objects.get(id=self.hand.id).word, None)
+
+    
+    def test_choose_a_word_but_you_are_not_playing_this_game(self):
+        '''
+            If you are not playing this game, then it should send you to your game (In This case the user's game is in waiting state).
+        '''
+        other_game = Game.objects.create(creator=self.secondaryUser, idiom=self.lang)
+        Play(game=other_game, user=self.secondaryUser)
+        self.client.login(username='second', password='1234')
+        response = self.client.post(path=reverse('game:choose', args=[self.game.id]), data={'choice': self.word.word})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('game:waiting', args=[other_game.id]))
+        self.assertEqual(Hand.objects.get(id=self.hand.id).word, None)
