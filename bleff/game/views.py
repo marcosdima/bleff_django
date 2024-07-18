@@ -1,5 +1,5 @@
 from django.http import HttpResponseRedirect
-from django.shortcuts import render, redirect
+from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.views import generic
 from django.contrib.auth.models import User
@@ -7,9 +7,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.http import require_POST
 
-from .models import Game, Play, Hand, Word, Guess
-from .utils import plays_game, get_game_hand, get_hand_choice_words
-from .decorators import play_required
+from .models import Game, HandGuess, Play, Hand, Vote, Word, Guess
+from .utils import plays_game, get_game_hand, get_hand_choice_words, remove_fields
+from .decorators import play_required, leader_required
 
 def handle_redirection(request):
     # If does not exists a Play with this user and a game unfinished.
@@ -60,9 +60,17 @@ class GuessesView(LoginRequiredMixin, generic.ListView):
     template_name = "game/guesses.html"
 
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)    
+        id = self.kwargs.get('game_id') 
+        game = Game.objects.get(id=id)
+        context['game'] = game
+        return context
+
+
     def get_queryset(self): 
         id = self.kwargs.get('game_id')
-        guesses = Guess.objects.filter(hand=get_game_hand(game_id=id))
+        guesses = remove_fields(object=Guess, fields=['writer'], filters={'hand': get_game_hand(game_id=id)})
         guesses_ready = len(guesses) == Play.objects.filter(game=id).count()
 
         return guesses if guesses_ready else []
@@ -121,6 +129,7 @@ def hand_view(request, game_id):
 @login_required
 @require_POST
 @play_required(handle_redirection)
+@leader_required(handle_redirection)
 def choose_word(request, game_id):
     choice = request.POST['choice']
 
@@ -136,7 +145,7 @@ def choose_word(request, game_id):
         # TODO: message error
         print(e)
         return handle_redirection(request=request)
-        
+
     return HttpResponseRedirect(reverse("game:hand", args=(game_id,)))
 
 
@@ -154,4 +163,19 @@ def make_guess(request, game_id):
         print(e)
         return handle_redirection(request=request)
     
+    return HttpResponseRedirect(reverse("game:guesses", args=(game_id,)))
+
+
+@login_required
+@require_POST
+@play_required(handle_redirection)
+def vote(request, game_id):
+    guess = get_object_or_404(Guess, writer=request.user, hand=get_game_hand(game_id=game_id))
+    guess_hand = get_object_or_404(HandGuess, guess=guess)
+
+    try:
+        Vote.objects.create(user=request.user, to=guess_hand)
+    except Exception as e:
+        print(e)
+
     return HttpResponseRedirect(reverse("game:guesses", args=(game_id,)))
