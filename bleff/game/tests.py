@@ -1143,3 +1143,50 @@ class ChooseViewTest(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('game:waiting', args=[other_game.id]))
         self.assertEqual(Hand.objects.get(id=self.hand.id).word, None)
+
+
+class MakeGuessViewTest(TestCase):
+    def setUp(self):
+        self.user = create_root_user()
+        self.secondaryUser = create_secondary_user()
+        self.lang = create_basic_language()
+        self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+
+        self.words = ['Cow', 'Diary', 'Python', 'Goose', 'Cheese']
+        for word in self.words:
+            create_word_meaning(word=word, language=self.lang, content=f'An explanation of what "{word}" is in English.', word_translation=word)
+
+        self.word = Word.objects.get(word=self.words[0])
+        self.word_2 = Word.objects.get(word=self.words[1])
+
+        self.hand = Hand.objects.create(game=self.game, leader=self.user)
+        self.hand = self.word
+        self.hand.save()
+
+    
+    def test_make_a_guess(self):
+        '''
+            An user make a guess.
+        '''
+        Play.objects.create(user=self.secondaryUser, game=self.game)
+        login_secondary_user(self)
+        guess_text = 'I think that means something like...'
+        response = self.client.post(path=reverse('game:make_guess', args=[self.game.id]), data={'guess': guess_text})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('game:guesses', args=[self.game.id]))
+        self.assertEqual(len(Guess.objects.all()), 1)
+
+
+    def test_make_a_guess_but_there_are_more_players(self):
+        '''
+            An user make a guess.
+        '''
+        Play.objects.create(user=self.secondaryUser, game=self.game)
+        login_secondary_user(self)
+        guess_text = 'I think that means something like...'
+        response = self.client.post(path=reverse('game:make_guess', args=[self.game.id]), data={'guess': guess_text})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('game:guesses', args=[self.game.id]))
+        self.assertEqual(len(Guess.objects.all()), 1)
