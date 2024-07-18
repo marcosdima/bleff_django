@@ -959,6 +959,37 @@ class EnterGameViewTest(TestCase):
         self.assertEqual(Play.objects.filter(game=self.game).count(), 2)
 
 
+class CreateGameViewTest(TestCase):
+    def setUp(self):
+        self.user = create_root_user()
+        self.lang = create_basic_language()
+        self.secondaryUser = create_secondary_user()
+
+    
+    def test_create_a_game(self):
+        '''
+            An user tries to create a game.
+        '''
+        login_root_user(self)
+        response = self.client.post(path=reverse('game:create'), data={'language_tag': self.lang.tag})
+        game = Game.objects.all()[0]
+
+        self.assertEqual(response.url, reverse('game:waiting', args=[game.id]))
+
+
+    def test_create_a_game_but_you_are_already_playing(self):
+        '''
+            An user tries to create a game.
+        '''
+        login_root_user(self)
+        game = Game.objects.create(idiom=self.lang, creator=self.user)
+        self.assertEqual(Game.objects.all().count(), 1)
+
+        response = self.client.post(path=reverse('game:create'), data={'language_tag': self.lang.tag})
+        self.assertEqual(Game.objects.all().count(), 1)
+        self.assertEqual(response.url, reverse('game:waiting', args=[game.id]))
+
+
 class WaitingViewTest(TestCase):
     def setUp(self):
         self.user = create_root_user()
