@@ -96,3 +96,10 @@ def hand_creation_restriction(sender, instance, **kwargs):
 
     if unfinished_hand and instance.id == None:
         raise ValidationError('The previus hand must finish before another its created!')
+
+
+@receiver(pre_save, sender=Game)
+def user_already_playing(sender, instance, **kwargs):
+    if not instance.pk and instance.creator:
+        if Play.objects.filter(user=instance.creator).exclude(game__finished_at__isnull=False).exists():
+            raise ValidationError('User is already playing something')
