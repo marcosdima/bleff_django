@@ -817,6 +817,28 @@ class UtilsFunctionsTest(TestCase):
         self.assertFalse(word_target in choices)
 
 
+    def test_remove_fields(self):
+        '''
+            This function should receive a Model and some fields to remove and return a dictionary without the removed fields.
+        '''
+        languages_without_tag = utils.remove_fields(object=Language, fields=['tag'], filters={'tag': self.lang.tag})
+
+        for language in languages_without_tag:
+            self.assertEqual(self.lang.name, language.name)
+            self.assertFalse(hasattr(language, 'tag'))
+
+
+    def test_remove_fields_with_non_existent_field(self):
+        '''
+            The object should remain the same as before remove fields.
+        '''
+        languages_without_false_field = utils.remove_fields(object=Language, fields=['FalseField'], filters={'tag': self.lang.tag})
+
+        for language in languages_without_false_field:
+            self.assertEqual(self.lang.name, language.name)
+            self.assertEqual(self.lang.tag, language.tag)
+
+
 class GameViewTests(TestCase):
     def setUp(self):
         self.user = create_basic_user()
