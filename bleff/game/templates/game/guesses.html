@@ -7,7 +7,19 @@
 </head>
 <body>
     {% if object_list %}
-        <div>Waiting for vote</div>
+        <form action="{% url 'game:vote' game.id %}" method="post">
+            {% csrf_token %}
+            <fieldset>
+                <legend><h2>Vote a guess</h2></legend>
+                {% for guess in object_list %}
+                    <div>
+                        <input type="radio" name="guess" id="guess{{ forloop.counter }}" value="{{ guess.id }}">
+                        <label>{{ guess.hand.word.word }} means: {{ guess.content }}</label>
+                    </div>
+                {% endfor %}
+            </fieldset>
+            <input type="submit" value="Vote">
+        </form>
     {% else %}
         <div>Waiting for other guesses</div>
     {% endif %}
