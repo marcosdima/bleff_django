@@ -16,14 +16,26 @@ def create_word_meaning(word: str, language: Language, word_translation: str, co
     return word, Meaning.objects.create(text=content, word_translation=word_translation, word=word, language=language)
 
 
-def create_basic_user():
+def create_root_user():
     return User.objects.create_user(username="root_test", password="password")
+
+
+def create_secondary_user():
+    return User.objects.create_user(username='second', password='1234')
 
 
 def create_basic_language():
     tag = 'EN'
     name = 'English'
     return Language.objects.create(tag=tag, name=name)
+
+
+def login_root_user(test: TestCase):
+    test.client.login(username="root_test", password="password")
+
+
+def login_secondary_user(test: TestCase):
+    test.client.login(username='second', password='1234')
 
 
 class WordModelTest(TestCase):
@@ -208,7 +220,7 @@ class MeaningModelTest(TestCase):
 
 class GameModelTest(TestCase):
     def setUp(self):
-        self.user = create_basic_user()
+        self.user = create_root_user()
         self.lang = create_basic_language()
 
 
@@ -279,8 +291,8 @@ class GameModelTest(TestCase):
 
 class PlayModelTest(TestCase):
     def setUp(self):
-        self.user = create_basic_user()
-        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.user = create_root_user()
+        self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
 
@@ -317,8 +329,8 @@ class PlayModelTest(TestCase):
 
 class HandModelTest(TestCase):
     def setUp(self):
-        self.user = create_basic_user()
-        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.user = create_root_user()
+        self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
 
@@ -474,8 +486,8 @@ class HandModelTest(TestCase):
 
 class GuessModelTest(TestCase):
     def setUp(self):
-        self.user = create_basic_user()
-        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.user = create_root_user()
+        self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
         self.word, self.meaning = create_word_meaning('House', language=self.lang, content='An explanation of what "HOUSE" is in English.', word_translation='HoUsE')
@@ -546,8 +558,8 @@ class GuessModelTest(TestCase):
 
 class HandGuessModelTest(TestCase):
     def setUp(self):
-        self.user = create_basic_user()
-        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.user = create_root_user()
+        self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
         self.word, self.meaning = create_word_meaning('House', language=self.lang, content='An explanation of what "HOUSE" is in English.', word_translation='HoUsE')
@@ -617,8 +629,8 @@ class HandGuessModelTest(TestCase):
 
 class VoteModelTest(TestCase):
     def setUp(self):
-        self.user = create_basic_user()
-        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.user = create_root_user()
+        self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
         self.word, self.meaning = create_word_meaning('House', language=self.lang, content='An explanation of what "HOUSE" is in English.', word_translation='HoUsE')
@@ -668,8 +680,8 @@ class VoteModelTest(TestCase):
 
 class ChoiceModelTest(TestCase):
     def setUp(self):
-        self.user = create_basic_user()
-        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.user = create_root_user()
+        self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
         self.hand = Hand.objects.create(leader=self.user, game=self.game)
@@ -721,8 +733,8 @@ class ChoiceModelTest(TestCase):
 
 class UtilsFunctionsTest(TestCase):
     def setUp(self):
-        self.user = create_basic_user()
-        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.user = create_root_user()
+        self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
 
@@ -841,7 +853,7 @@ class UtilsFunctionsTest(TestCase):
 
 class GameViewTest(TestCase):
     def setUp(self):
-        self.user = create_basic_user()
+        self.user = create_root_user()
         self.lang = create_basic_language()
 
 
@@ -868,9 +880,9 @@ class GameViewTest(TestCase):
 
 class EnterGameViewTest(TestCase):
     def setUp(self):
-        self.user = create_basic_user()
+        self.user = create_root_user()
         self.lang = create_basic_language()
-        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.secondaryUser = create_secondary_user()
         self.game = Game.objects.create(creator=self.user, idiom=self.lang)
 
     
@@ -880,7 +892,7 @@ class EnterGameViewTest(TestCase):
         '''
         self.assertEqual(Play.objects.filter(game=self.game).count(), 1)
 
-        self.client.login(username="root_test", password="password")
+        login_root_user(self)
         response = self.client.post(path=reverse('game:enter_game'), data={'game': self.game.id})
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('game:waiting', args=[self.game.id]))
@@ -892,7 +904,7 @@ class EnterGameViewTest(TestCase):
         '''
             This should create a play with this user and redirect the user to waiting.
         '''
-        self.client.login(username='second', password='1234')
+        login_secondary_user(self)
         response = self.client.post(path=reverse('game:enter_game'), data={'game': self.game.id})
 
         self.assertEqual(response.status_code, 302)
@@ -902,8 +914,8 @@ class EnterGameViewTest(TestCase):
 
 class WaitingViewTest(TestCase):
     def setUp(self):
-        self.user = create_basic_user()
-        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.user = create_root_user()
+        self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
 
@@ -912,7 +924,7 @@ class WaitingViewTest(TestCase):
         '''
             The view should display a list with one element, the game creator.
         '''
-        self.client.login(username="root_test", password="password")
+        login_root_user(self)
 
         response = self.client.get(reverse('game:waiting', args=[self.game.id]))
         self.assertEqual(response.status_code, 200)
@@ -923,7 +935,7 @@ class WaitingViewTest(TestCase):
         '''
             The view should display a list with game users.
         '''
-        self.client.login(username='second', password='1234')
+        login_secondary_user(self)
         Play.objects.create(game=self.game, user=self.secondaryUser)
 
         response = self.client.get(reverse('game:waiting', args=[self.game.id]))
@@ -942,8 +954,8 @@ class WaitingViewTest(TestCase):
 
 class StartGameViewTest(TestCase):
     def setUp(self):
-        self.user = create_basic_user()
-        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.user = create_root_user()
+        self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
 
@@ -952,7 +964,7 @@ class StartGameViewTest(TestCase):
         '''
             The view should create the first hand and redirect the user to hand view.
         '''
-        self.client.login(username="root_test", password="password")
+        login_root_user(self)
         response = self.client.post(reverse('game:start_game', args=[self.game.id]))
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('game:hand', args=[self.game.id]))
@@ -964,7 +976,7 @@ class StartGameViewTest(TestCase):
             The view should redirect the user to waiting.
         '''
         Play.objects.create(game=self.game, user=self.secondaryUser)
-        self.client.login(username='second', password='1234')
+        login_secondary_user(self)
         
         response = self.client.post(reverse('game:start_game', args=[self.game.id]))
         self.assertEqual(response.status_code, 302)
@@ -981,7 +993,7 @@ class StartGameViewTest(TestCase):
         self.game.creator = None
         self.game.save()
 
-        self.client.login(username='second', password='1234')
+        login_secondary_user(self)
         response = self.client.post(reverse('game:start_game', args=[self.game.id]))
         
         self.assertEqual(response.status_code, 302)
@@ -993,7 +1005,7 @@ class StartGameViewTest(TestCase):
         '''
             The view should create the first hand and redirect the user to hand view.
         '''
-        self.client.login(username='second', password='1234')
+        login_secondary_user(self)
         response = self.client.post(reverse('game:start_game', args=[self.game.id]))
         
         self.assertEqual(response.status_code, 302)
@@ -1003,8 +1015,8 @@ class StartGameViewTest(TestCase):
 
 class HandViewTest(TestCase):
     def setUp(self):
-        self.user = create_basic_user()
-        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.user = create_root_user()
+        self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
 
@@ -1020,7 +1032,7 @@ class HandViewTest(TestCase):
         '''
             This view should display a list of words to choose.
         '''
-        self.client.login(username="root_test", password="password")
+        login_root_user(self)
         Hand.objects.create(game=self.game, leader=self.user)
         response = self.client.get(path=reverse('game:hand', args=[self.game.id]))
         self.assertEqual(response.status_code, 200)
@@ -1034,7 +1046,7 @@ class HandViewTest(TestCase):
             This view should display a message.
         '''
         Play.objects.create(game=self.game, user=self.secondaryUser)
-        self.client.login(username='second', password='1234')
+        login_secondary_user(self)
         hand = Hand.objects.create(game=self.game, leader=self.user)
         response = self.client.get(path=reverse('game:hand', args=[self.game.id]))
         self.assertEqual(response.status_code, 200)
@@ -1046,7 +1058,7 @@ class HandViewTest(TestCase):
         '''
             This view should display a message.
         '''
-        self.client.login(username='second', password='1234')
+        login_secondary_user(self)
         Hand.objects.create(game=self.game, leader=self.user)
         response = self.client.get(path=reverse('game:hand', args=[self.game.id]))
         self.assertEqual(response.status_code, 302)
@@ -1057,7 +1069,7 @@ class HandViewTest(TestCase):
         '''
             If a word was chosen, then even the leader should not have word to choose.
         '''
-        self.client.login(username="root_test", password="password")
+        login_root_user(self)
         hand = Hand.objects.create(game=self.game, leader=self.user)
         hand.word = self.word
 
@@ -1068,8 +1080,8 @@ class HandViewTest(TestCase):
 
 class ChooseViewTest(TestCase):
     def setUp(self):
-        self.user = create_basic_user()
-        self.secondaryUser = User.objects.create_user(username='second', password='1234')
+        self.user = create_root_user()
+        self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
 
@@ -1087,7 +1099,7 @@ class ChooseViewTest(TestCase):
         '''
             Choose the hand word.
         '''
-        self.client.login(username="root_test", password="password")
+        login_root_user(self)
         response = self.client.post(path=reverse('game:choose', args=[self.game.id]), data={'choice': self.word.word})
 
         self.assertEqual(response.url, reverse('game:hand', args=[self.game.id]))
@@ -1099,7 +1111,7 @@ class ChooseViewTest(TestCase):
             Only the leader can choose.
         '''
         Play.objects.create(game=self.game, user=self.secondaryUser)
-        self.client.login(username='second', password='1234')
+        login_secondary_user(self)
         response = self.client.post(path=reverse('game:choose', args=[self.game.id]), data={'choice': self.word.word})
 
         self.assertEqual(response.status_code, 302)
@@ -1111,7 +1123,7 @@ class ChooseViewTest(TestCase):
         '''
             If you are not playing any game, then it should send you to index.
         '''
-        self.client.login(username='second', password='1234')
+        login_secondary_user(self)
         response = self.client.post(path=reverse('game:choose', args=[self.game.id]), data={'choice': self.word.word})
 
         self.assertEqual(response.status_code, 302)
@@ -1125,7 +1137,7 @@ class ChooseViewTest(TestCase):
         '''
         other_game = Game.objects.create(creator=self.secondaryUser, idiom=self.lang)
         Play(game=other_game, user=self.secondaryUser)
-        self.client.login(username='second', password='1234')
+        login_secondary_user(self)
         response = self.client.post(path=reverse('game:choose', args=[self.game.id]), data={'choice': self.word.word})
 
         self.assertEqual(response.status_code, 302)
