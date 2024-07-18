@@ -21,6 +21,13 @@ class ConditionsResult:
         self.label = label
         self.value_required = value_required
 
+    
+    def __str__(self) -> str:
+        result = f'Fields: \n'
+        for k, v in self.__dict__.items():
+            result += f'- {k}: {v} \n'
+        return result
+
 
 def plays_game(user: User, game_id: int) -> bool:
     return Play.objects.filter(game=game_id, user=user).exists()
