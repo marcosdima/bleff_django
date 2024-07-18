@@ -149,6 +149,7 @@ def choose_word(request, game_id):
     return HttpResponseRedirect(reverse("game:hand", args=(game_id,)))
 
 
+# TODO: The leader should check if there is any rigth guess.
 @login_required
 @require_POST
 @play_required(handle_redirection)
