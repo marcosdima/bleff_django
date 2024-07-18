@@ -7,7 +7,7 @@ from django.db.utils import IntegrityError
 from django.test import TestCase
 from django.contrib.auth.models import User
 
-from .models import Word, Language, Meaning, Game, Play, Hand, Guess, HandGuess, Vote, Choice
+from .models import ConditionTag, Word, Language, Meaning, Game, Play, Hand, Guess, HandGuess, Vote, Choice, Condition
 from . import utils
 
 def create_word_meaning(word: str, language: Language, word_translation: str, content: str):
@@ -36,6 +36,16 @@ def login_root_user(test: TestCase):
 
 def login_secondary_user(test: TestCase):
     test.client.login(username='second', password='1234')
+
+
+def create_user_and_play(username: str, password: str, game: Game):
+    user = User.objects.create(username=username, password=password)
+    Play.objects.create(user=user, game=game)
+    return user
+
+
+def create_n_players(n: int, game: Game):
+    return [create_user_and_play(username=f'TestUser °{i}', password=f'{str(i) * 3}', game=game) for i in range(n)]
 
 
 class WordModelTest(TestCase):
@@ -744,6 +754,9 @@ class UtilsFunctionsTest(TestCase):
 
         self.word = Word.objects.get(word=self.words[0])
         self.word_2 = Word.objects.get(word=self.words[1])
+
+        self.max = ConditionTag.objects.create(tag='MAX_PLAYERS')
+        self.min = ConditionTag.objects.create(tag='MIN_PLAYERS')
     
 
     def test_plays_game_function_should_be_true(self):
@@ -849,6 +862,40 @@ class UtilsFunctionsTest(TestCase):
         for language in languages_without_false_field:
             self.assertEqual(self.lang.name, language.name)
             self.assertEqual(self.lang.tag, language.tag)
+
+
+    def test_conditions_are_met(self):
+        '''
+            conditions_are_met function should validate that the conditions, if exists, are met.
+        '''
+        Condition.objects.create(game=self.game, tag=self.max, value=6)
+        Condition.objects.create(game=self.game, tag=self.min, value=4)
+        create_n_players(n=5, game=self.game)
+        self.assertEqual(len(utils.conditions_are_met(game_id=self.game.id)), 0)
+
+
+    def test_conditions_are_met_with_no_conditions(self):
+        '''
+            There are no conditions, so conditions are met.
+        '''
+        self.assertEqual(len(utils.conditions_are_met(game_id=self.game.id)), 0)
+
+
+    def test_conditions_are_not_enough_players(self):
+        '''
+            There is a condition of 10 players min, so conditions are not met.
+        '''
+        Condition.objects.create(game=self.game, tag=self.min, value=5)
+        self.assertEqual(len(utils.conditions_are_met(game_id=self.game.id)), 1)
+
+
+    def test_conditions_are_not_enough_players(self):
+        '''
+            There is a condition of 10 players min, so conditions are not met.
+        '''
+        Condition.objects.create(game=self.game, tag=self.max, value=5)
+        create_n_players(n=10, game=self.game)
+        self.assertEqual(len(utils.conditions_are_met(game_id=self.game.id)), 1)
 
 
 class GameViewTest(TestCase):
