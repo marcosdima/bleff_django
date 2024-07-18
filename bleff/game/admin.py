@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Game, Word, Meaning, Language, Play, Hand, Guess, Vote
+from .models import Game, Word, Meaning, Language, Play, Hand, Guess, Condition, ConditionTag
 
 class PlayInLine(admin.TabularInline):
     model = Play
@@ -20,9 +20,15 @@ class GuessInLine(admin.TabularInline):
     model = Guess
     extra = 2
 
+
+class ConditionInLine(admin.TabularInline):
+    model = Condition
+    extra = 2
+
+
 @admin.register(Game)
 class GameAdmin(admin.ModelAdmin):
-    inlines = [PlayInLine, HandInLine]
+    inlines = [ConditionInLine, PlayInLine, HandInLine]
 
 
 @admin.register(Word)
@@ -40,3 +46,6 @@ class PersonAdmin(admin.ModelAdmin):
     pass
 
 
+@admin.register(ConditionTag)
+class ConditionTagAdmin(admin.ModelAdmin):
+    pass
