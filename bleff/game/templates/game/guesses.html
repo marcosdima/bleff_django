@@ -14,7 +14,7 @@
                 {% for guess in object_list %}
                     <div>
                         <input type="radio" name="guess" id="guess{{ forloop.counter }}" value="{{ guess.id }}">
-                        <label>{{ guess.hand.word.word }} means: {{ guess.content }}</label>
+                        <label>{{ hand.word.word }} means: {{ guess.content }}</label>
                     </div>
                 {% endfor %}
             </fieldset>

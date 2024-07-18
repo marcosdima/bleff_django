@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.http import require_POST
 
-from .models import Game, HandGuess, Play, Hand, Vote, Word, Guess
+from .models import Game, HandGuess, Language, Play, Hand, Vote, Word, Guess
 from .utils import plays_game, get_game_hand, get_hand_choice_words, remove_fields, conditions_are_met
 from .decorators import play_required, leader_required, conditions_met
 
@@ -51,6 +51,12 @@ class IndexView(generic.ListView):
     template_name = "game/index.html"
 
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)    
+        context['languages'] = Language.objects.all()
+        return context
+
+
 class WaitingView(LoginRequiredMixin, generic.ListView):
     model = User
     template_name = "game/waiting.html"
@@ -79,14 +85,16 @@ class GuessesView(LoginRequiredMixin, generic.ListView):
         id = self.kwargs.get('game_id') 
         game = Game.objects.get(id=id)
         context['game'] = game
+        context['hand'] = get_game_hand(game_id=id)
         return context
 
 
     def get_queryset(self): 
         id = self.kwargs.get('game_id')
         guesses = remove_fields(object=Guess, fields=['writer'], filters={'hand': get_game_hand(game_id=id)})
-        guesses_ready = len(guesses) == Play.objects.filter(game=id).count()
 
+        guesses_ready = len(guesses) == Play.objects.filter(game=id).count()
+        
         return guesses if guesses_ready else []
     
 
@@ -112,7 +120,8 @@ def enter_game(request):
 @login_required
 @require_POST
 def create_game(request):
-    language = request.POST['language']
+    language_tag = request.POST['language_tag']
+    language = get_object_or_404(Language, tag=language_tag)
     game = create_or_none(request=request, model=Game, fields={'creator': request.user, 'idiom': language})
     return redirect('game:waiting', game_id=game.id) if game else handle_redirection(request=request)
 
@@ -124,17 +133,9 @@ def create_game(request):
 def start_game(request, game_id):
     game = Game.objects.get(pk=game_id)
 
-    alreadyEnded = game.finished_at != None
-    alreadyStarted = Hand.objects.filter(game=game).exists()
+    start_hand = create_or_none(request=request, model=Hand, fields={'game': game})
 
-    if alreadyEnded:
-        # If the game already ended or user does not play 'game_id' game, redirects to index.
-        return handle_redirection(request=request)
-    
-    if not alreadyStarted and (not game.creator or game.creator.id == request.user.id):
-        Hand.objects.create(game=game)
-        
-    return handle_redirection(request=request)
+    return HttpResponseRedirect(reverse("game:hand", args=(game_id,))) if start_hand else handle_redirection(request=request)
 
 
 @login_required

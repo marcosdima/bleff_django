@@ -22,5 +22,18 @@
     {% else %}
         <div>No games are available.</div>
     {% endif %}
+    <form action="{% url 'game:create' %}" method="post">
+        {% csrf_token %}
+        <fieldset>
+            <legend><h2>Create a Game</h2></legend>
+            {% for language in languages %}
+                <div>
+                    <input type="radio" name="language_tag" id="language{{ forloop.counter }}" value="{{ language.tag }}">
+                    <label>{{ language }}</label>
+                </div>
+            {% endfor %}
+        </fieldset>
+        <input type="submit" value="Create">
+    </form>
 </body>
 </html>
