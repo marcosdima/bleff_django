@@ -36,6 +36,16 @@ def handle_redirection(request):
     return HttpResponseRedirect(reverse("game:guesses", args=(game.id,)))
 
 
+def create_or_none(request, model, fields):
+    try:
+        creation = model.objects.create(**fields)
+        return creation
+    except Exception as e:
+        # TODO: message error
+        print(e)
+        return None
+
+
 class IndexView(generic.ListView):
     model = Game
     template_name = "game/index.html"
@@ -97,6 +107,14 @@ def enter_game(request):
         return handle_redirection(request=request)
 
     return redirect('game:waiting', game_id=game.id)
+
+
+@login_required
+@require_POST
+def create_game(request):
+    language = request.POST['language']
+    game = create_or_none(request=request, model=Game, fields={'creator': request.user, 'idiom': language})
+    return redirect('game:waiting', game_id=game.id) if game else handle_redirection(request=request)
 
 
 @login_required
@@ -165,14 +183,9 @@ def make_guess(request, game_id):
     guess = request.POST['guess']
     hand = get_game_hand(game_id=game_id)
 
-    try:
-        Guess.objects.create(hand=hand, writer=request.user, content=guess)
-    except Exception as e:
-        # TODO: message error
-        print(e)
-        return handle_redirection(request=request)
-    
-    return HttpResponseRedirect(reverse("game:guesses", args=(game_id,)))
+    guess = create_or_none(request=request, model=Guess, fields={'hand': hand, 'writer':request.user, 'content': guess})
+
+    return HttpResponseRedirect(reverse("game:guesses", args=(game_id,))) if guess else handle_redirection(request=request)
 
 
 @login_required
@@ -183,9 +196,6 @@ def vote(request, game_id):
     guess = get_object_or_404(Guess, writer=request.user, hand=get_game_hand(game_id=game_id))
     guess_hand = get_object_or_404(HandGuess, guess=guess)
 
-    try:
-        Vote.objects.create(user=request.user, to=guess_hand)
-    except Exception as e:
-        print(e)
+    vote = create_or_none(request=request, model=Vote, fields={'to': guess_hand, 'user':request.user})
 
-    return HttpResponseRedirect(reverse("game:guesses", args=(game_id,)))
+    return HttpResponseRedirect(reverse("game:guesses", args=(game_id,))) if vote else handle_redirection(request=request)
