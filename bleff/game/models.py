@@ -4,6 +4,7 @@ from django.forms import ValidationError
 from django.contrib.auth.models import User
 from django.db import models
 
+
 class Word(models.Model):
     word = models.CharField(max_length=40, unique=True, validators=[MinLengthValidator(3)])
 
@@ -185,3 +186,19 @@ class Choice(models.Model):
             raise ValidationError("Word must have a Meaning in Game idiom")
         
         super().save(*args, **kwargs)
+
+
+class ConditionTag(models.Model):
+    tag = models.CharField(max_length=70, validators=[MinLengthValidator(7)]) # TODO: Think if instead of modify save function, create validators like MinLengthValidator
+
+
+class Condition(models.Model):
+    game = models.ForeignKey(Game, on_delete=models.CASCADE)
+    tag = models.ForeignKey(ConditionTag, on_delete=models.CASCADE)
+    value = models.IntegerField()
+
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['game', 'tag'], name='unique_tag_per_game')
+        ]
