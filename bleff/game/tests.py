@@ -490,7 +490,8 @@ class HandModelTest(TestCase):
         '''
         self.game.end()
         
-        Hand.objects.create(game=self.game).full_clean()
+        with self.assertRaises(ValidationError):
+            Hand.objects.create(game=self.game).full_clean()
 
 
 class GuessModelTest(TestCase):
@@ -563,6 +564,13 @@ class GuessModelTest(TestCase):
         '''
         with self.assertRaises(ValidationError):
             Guess.objects.create(hand=self.hand, content=self.content, writer=None)
+
+
+    def test_just_can_exists_one_is_original_guess_(self):
+        '''
+            Just can exists one "is_original" Guess
+        '''
+        print(Guess.objects.create(hand=self.hand, content=self.content, writer=self.user, is_original=True))
 
 
 class HandGuessModelTest(TestCase):
