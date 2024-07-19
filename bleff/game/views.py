@@ -93,7 +93,8 @@ class GuessesView(LoginRequiredMixin, generic.ListView):
         id = self.kwargs.get('game_id')
         guesses = remove_fields(object=Guess, fields=['writer'], filters={'hand': get_game_hand(game_id=id)})
 
-        guesses_ready = len(guesses) == Play.objects.filter(game=id).count()
+         # +1 because there is a default guess that was not writed by an user.
+        guesses_ready = len(guesses) == Play.objects.filter(game=id).count() + 1
         
         return guesses if guesses_ready else []
     
