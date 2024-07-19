@@ -566,11 +566,12 @@ class GuessModelTest(TestCase):
             Guess.objects.create(hand=self.hand, content=self.content, writer=None)
 
 
-    def test_just_can_exists_one_is_original_guess_(self):
+    def test_just_can_exists_one_is_original_guess(self):
         '''
             Just can exists one "is_original" Guess
         '''
-        print(Guess.objects.create(hand=self.hand, content=self.content, writer=self.user, is_original=True))
+        with self.assertRaises(ValidationError):
+            Guess.objects.create(hand=self.hand, content=self.content, writer=self.user, is_original=True)
 
 
 class HandGuessModelTest(TestCase):
