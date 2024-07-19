@@ -566,12 +566,13 @@ class GuessModelTest(TestCase):
             Guess.objects.create(hand=self.hand, content=self.content, writer=None)
 
 
-    def test_just_can_exists_one_is_original_guess(self):
+    def test_create_a_guess_but_hand_ended(self):
         '''
-            Just can exists one "is_original" Guess
+            If hand ended, then guesses can not be created.
         '''
+        self.hand.end()
         with self.assertRaises(ValidationError):
-            Guess.objects.create(hand=self.hand, content=self.content, writer=self.user, is_original=True)
+            Guess.objects.create(hand=self.hand, content=self.content, writer=self.secondaryUser).full_clean()
 
 
 class HandGuessModelTest(TestCase):

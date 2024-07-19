@@ -114,7 +114,7 @@ class Guess(models.Model):
     content = models.CharField(max_length=200, validators=[MinLengthValidator(1)])
     created_at = models.DateTimeField(default=timezone.now)
     is_original = models.BooleanField(default=False)
-    hand = models.ForeignKey(Hand, on_delete=models.CASCADE)
+    hand = models.ForeignKey(Hand, on_delete=models.CASCADE, validators=[FieldNull(model=Hand, field='finished_at')])
     writer = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     
 
@@ -130,8 +130,6 @@ class Guess(models.Model):
                 raise ValidationError('Just can exists one "is_original" Guess')
             elif not self.writer and Guess.objects.filter(hand=self.hand, writer=None).exists():
                 raise ValidationError('Just one Guess can have writer as None, the one that has the right answer.')
-            elif self.hand.finished_at:
-                raise ValidationError(f"Hand already finished. New guesses for {self.hand} can't be created")
 
         super().save(*args, **kwargs)
 
