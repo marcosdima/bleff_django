@@ -79,7 +79,7 @@ class Hand(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     finished_at = models.DateTimeField(null=True, blank=True, default=None)
     leader = models.ForeignKey(User, on_delete=models.SET_NULL, default=None, null=True, blank=True)
-    game = models.ForeignKey(Game, on_delete=models.CASCADE, validators=[FieldNull(field='finished_at')])
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, validators=[FieldNull(model=Game, field='finished_at')])
     word = models.ForeignKey(Word, on_delete=models.PROTECT, null=True, blank=True)
 
 
