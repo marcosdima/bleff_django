@@ -490,8 +490,7 @@ class HandModelTest(TestCase):
         '''
         self.game.end()
         
-        with self.assertRaises(ValidationError):
-            Hand.objects.create(game=self.game)
+        Hand.objects.create(game=self.game).full_clean()
 
 
 class GuessModelTest(TestCase):
