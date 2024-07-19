@@ -4,6 +4,7 @@ from django.forms import ValidationError
 from django.contrib.auth.models import User
 from django.db import models
 
+from .validators import FieldNull
 
 class Word(models.Model):
     word = models.CharField(max_length=40, unique=True, validators=[MinLengthValidator(3)])
@@ -78,8 +79,8 @@ class Hand(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     finished_at = models.DateTimeField(null=True, blank=True, default=None)
     leader = models.ForeignKey(User, on_delete=models.SET_NULL, default=None, null=True, blank=True)
-    game = models.ForeignKey(Game, on_delete=models.CASCADE)
-    word = models.ForeignKey(Word, on_delete=models.PROTECT, null=True)
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, validators=[FieldNull(field='finished_at')])
+    word = models.ForeignKey(Word, on_delete=models.PROTECT, null=True, blank=True)
 
 
     class Meta:
@@ -93,8 +94,6 @@ class Hand(models.Model):
             raise ValidationError("Leader can't be an User that does not belong")
         elif self.finished_at and self.finished_at < self.created_at:
             raise ValidationError('A Hand can not be finished before it starts')
-        elif self.game.finished_at != None:
-            raise ValidationError('Can not create a game ended hand')
 
         super().save(*args, **kwargs)
 
