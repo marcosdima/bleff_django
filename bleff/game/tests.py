@@ -540,14 +540,24 @@ class GuessModelTest(TestCase):
             Guess.objects.create(hand=self.hand, content=self.content)
 
 
-    def test_create_a_guess_after_create_hand(self):
+    def test_create_a_default_guess_after_create_hand(self):
         '''
-            When a Hand is created, a Guess with the right content has to be created too.
+            When a Hand is created and has a word, a Guess with the right content has to be created too.
         '''
         # In 'setUp' self.hand was created.
         right = Guess.objects.filter(hand=self.hand)[0]
-        self.assertEqual(True, right != None)
-        self.assertEqual(True, right.is_original)
+        self.assertTrue(right != None)
+        self.assertTrue(right.is_original)
+
+
+    def test_create_a_default_guess_after_create_hand_but_there_is_no_word(self):
+        '''
+            When a Hand is created and has a word, a Guess with the right content has to be created too. But in this case there is no word selected, so it can not happend.
+        '''
+        self.hand.end()
+        hand = Hand.objects.create(game=self.game)
+        guesses = Guess.objects.filter(hand=hand)
+        self.assertFalse(guesses.exists())
 
 
     def test_create_a_guess_with_is_original_as_true(self):

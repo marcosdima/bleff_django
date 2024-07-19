@@ -14,7 +14,7 @@ def play_creation_creator(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=Hand)
 def right_guess_creator(sender, instance, created, **kwargs):
-    if created and instance.word:
+    if instance.word:
         Guess.objects.create(content=Meaning.objects.filter(word=instance.word)[0].text, is_original=True, hand=instance)
 
 
