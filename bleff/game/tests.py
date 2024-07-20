@@ -1268,7 +1268,7 @@ class MakeGuessViewTest(TestCase):
         self.word_2 = Word.objects.get(word=self.words[1])
 
         self.hand = Hand.objects.create(game=self.game, leader=self.user)
-        self.hand = self.word
+        self.hand.word = self.word
         self.hand.save()
 
     
@@ -1283,18 +1283,51 @@ class MakeGuessViewTest(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('game:guesses', args=[self.game.id]))
-        self.assertEqual(len(Guess.objects.all()), 1)
+        self.assertEqual(len(Guess.objects.all()), 2)
 
 
-    def test_make_a_guess_but_there_are_more_players(self):
+    def test_make_a_guess_but_there_are_not_playing(self):
         '''
             An user make a guess.
         '''
-        Play.objects.create(user=self.secondaryUser, game=self.game)
         login_secondary_user(self)
         guess_text = 'I think that means something like...'
         response = self.client.post(path=reverse('game:make_guess', args=[self.game.id]), data={'guess': guess_text})
 
         self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('game:index'))
+
+
+class VoteViewTest(TestCase):
+    def setUp(self):
+        self.user = create_root_user()
+        self.secondaryUser = create_secondary_user()
+        self.lang = create_basic_language()
+        self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+        Play.objects.create(game=self.game, user=self.secondaryUser)
+
+        self.words = ['Cow', 'Diary', 'Python', 'Goose', 'Cheese']
+        for word in self.words:
+            create_word_meaning(word=word, language=self.lang, content=f'An explanation of what "{word}" is in English.', word_translation=word)
+
+        self.word = Word.objects.get(word=self.words[0])
+        self.word_2 = Word.objects.get(word=self.words[1])
+
+        self.hand = Hand.objects.create(game=self.game, leader=self.user)
+        self.hand.word = self.word
+        self.hand.save()
+  
+        self.root_guess = Guess.objects.create(writer=self.user, content='A content sdasdasdasdasda', hand=self.hand)
+        self.secondary_guess = Guess.objects.create(writer=self.secondaryUser, content='A content sdasdasdasdasda 2', hand=self.hand)
+
+    
+    def test_vote_your_guess(self):
+        '''
+            Should let you vote.
+        '''
+        response = self.client.post(path=reverse('game:vote', args=[self.game.id]))
+
+        self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('game:guesses', args=[self.game.id]))
-        self.assertEqual(len(Guess.objects.all()), 1)
+
+        
