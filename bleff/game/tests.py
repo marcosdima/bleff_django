@@ -917,6 +917,23 @@ class UtilsFunctionsTest(TestCase):
         self.assertEqual(len(utils.conditions_are_met(game_id=self.game.id)), 1)
 
 
+    def test_is_leader(self):
+        '''
+            Is leader function should return True.
+        '''
+        Hand.objects.create(game=self.game)
+        self.assertTrue(utils.is_leader(user=self.user, game_id=self.game.id))
+
+
+    def test_is_leader_but_is_not_the_leader(self):
+        '''
+            Is leader function should return False.
+        '''
+        Hand.objects.create(game=self.game)
+        Play.objects.create(game=self.game, user=self.secondaryUser)
+        self.assertFalse(utils.is_leader(user=self.secondaryUser, game_id=self.game.id))
+
+
 class GameViewTest(TestCase):
     def setUp(self):
         self.user = create_root_user()

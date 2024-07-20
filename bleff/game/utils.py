@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.db.models import Model
 
-from .models import Hand, Play, Choice, Game, Condition, ConditionTag
+from .models import Hand, Play, Choice, Game, Condition, HandGuess
 
 class FilteredObject:
     def __init__(self, dictionary: dict) -> None:
@@ -69,3 +69,15 @@ def conditions_are_met(game_id: int) -> list[ConditionsResult]:
             result.append(ConditionsResult(tag, value))
 
     return result
+
+
+def is_leader(user: User, game_id: int) -> bool:
+    '''
+        Check if user is the actual hand leader.
+    '''
+    hand = get_game_hand(game_id=game_id)
+    return user.id == hand.leader.id if hand else False
+
+
+def there_are_guesses_to_check(game_id: int) -> bool:
+    return HandGuess.objects.filter(hand=get_game_hand(game_id=game_id), is_correct=None).exists()
