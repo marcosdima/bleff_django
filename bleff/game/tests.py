@@ -556,8 +556,7 @@ class GuessModelTest(TestCase):
         '''
         self.hand.end()
         hand = Hand.objects.create(game=self.game)
-        guesses = Guess.objects.filter(hand=hand)
-        self.assertFalse(guesses.exists())
+        self.assertFalse(Guess.objects.filter(hand=hand).exists())
 
 
     def test_create_a_guess_with_is_original_as_true(self):

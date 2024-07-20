@@ -104,7 +104,7 @@ class Hand(models.Model):
     
     def end(self):
         if self.finished_at:
-            raise ValidationError("Can't end a game more than one time")
+            raise ValidationError("Can't end a hand more than one time")
 
         self.finished_at = timezone.now()
         self.save()
@@ -126,7 +126,9 @@ class Guess(models.Model):
 
     def save(self, *args, **kwargs):
         if hasattr(self, 'hand') and not self.id:
-            if self.is_original and Guess.objects.filter(hand=self.hand, is_original=True).exists():
+            is_original = Guess.objects.filter(hand=self.hand, is_original=True)
+
+            if self.is_original and is_original.exists() and is_original[0].id != self.id:
                 raise ValidationError('Just can exists one "is_original" Guess')
             elif not self.writer and Guess.objects.filter(hand=self.hand, writer=None).exists():
                 raise ValidationError('Just one Guess can have writer as None, the one that has the right answer.')
