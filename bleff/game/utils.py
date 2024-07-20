@@ -80,4 +80,5 @@ def is_leader(user: User, game_id: int) -> bool:
 
 
 def there_are_guesses_to_check(game_id: int) -> bool:
+    print(HandGuess.objects.filter(hand=get_game_hand(game_id=game_id, is_correct=None)))
     return HandGuess.objects.filter(hand=get_game_hand(game_id=game_id), is_correct=None).exists()

@@ -934,6 +934,26 @@ class UtilsFunctionsTest(TestCase):
         self.assertFalse(utils.is_leader(user=self.secondaryUser, game_id=self.game.id))
 
 
+    def test_there_are_guesses_to_check(self):
+        '''
+            With no guesses should be false.
+        '''
+        self.assertFalse(utils.there_are_guesses_to_check(game_id=self.game.id))
+
+
+    def test_there_are_guesses_to_check_but_there_are(self):
+        '''
+            With no guesses should be true.
+        '''
+        hand = Hand.objects.create(game=self.game)
+        hand.word = self.word
+        hand.save()
+
+        Guess.objects.create(writer=self.user, content='CONTENT A CONTENT A CONTENT', hand=hand)
+
+        self.assertTrue(utils.there_are_guesses_to_check(game_id=self.game.id))
+
+
 class GameViewTest(TestCase):
     def setUp(self):
         self.user = create_root_user()
