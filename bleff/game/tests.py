@@ -1308,7 +1308,21 @@ class MakeGuessViewTest(TestCase):
         self.hand.save()
 
     
-    def test_make_a_guess(self):
+    def test_make_a_guess_as_leader(self):
+        '''
+            The leader make a guess.
+        '''
+        Play.objects.create(user=self.secondaryUser, game=self.game)
+        login_root_user(self)
+        guess_text = 'I think that means something like...'
+        response = self.client.post(path=reverse('game:make_guess', args=[self.game.id]), data={'guess': guess_text})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('game:check_guesses', args=[self.game.id]))
+        self.assertEqual(len(Guess.objects.all()), 2)
+
+
+    def test_make_a_guess_as_player(self):
         '''
             An user make a guess.
         '''
@@ -1365,5 +1379,3 @@ class VoteViewTest(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('game:guesses', args=[self.game.id]))
-
-        
