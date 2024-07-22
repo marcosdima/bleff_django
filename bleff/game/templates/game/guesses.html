@@ -6,12 +6,12 @@
     <title>Bleff</title>
 </head>
 <body>
-    {% if object_list %}
+    {% if guesses %}
         <form action="{% url 'game:vote' game.id %}" method="post">
             {% csrf_token %}
             <fieldset>
                 <legend><h2>Vote a guess</h2></legend>
-                {% for guess in object_list %}
+                {% for guess in guesses %}
                     <div>
                         <input type="radio" name="guess" id="guess{{ forloop.counter }}" value="{{ guess.id }}">
                         <label>{{ hand.word.word }} means: {{ guess.content }}</label>
