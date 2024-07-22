@@ -143,7 +143,7 @@ class Guess(models.Model):
 class HandGuess(models.Model):
     hand = models.ForeignKey(Hand, on_delete=models.CASCADE)
     guess = models.ForeignKey(Guess, on_delete=models.CASCADE)
-    is_correct = models.BooleanField(default=False)
+    is_correct = models.BooleanField(default=None, blank=None, null=True)
 
 
     class Meta:
