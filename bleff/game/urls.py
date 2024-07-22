@@ -13,6 +13,7 @@ urlpatterns = [
     path("<int:game_id>/hand/", views.hand_view, name="hand"),
     path("<int:game_id>/hand/choose/", views.choose_word, name="choose"),
     path("<int:game_id>/hand/guess/", views.make_guess, name="make_guess"),
-    path("<int:game_id>/hand/guesses/", views.GuessesView.as_view(), name="guesses"),
+    path("<int:game_id>/hand/guesses/check", views.make_guess, name="check_guesses"),
+    path("<int:game_id>/hand/guesses/", views.guesses_view, name="guesses"),
     path("<int:game_id>/hand/guess/vote", views.vote, name="vote"),
 ]
