@@ -208,7 +208,9 @@ def guesses_view(request, game_id):
 
     guesses_ready = not HandGuess.objects.filter(hand=hand, is_correct=None).exists()
 
-    guesses = remove_fields(object=Guess, fields=['writer'], filters={'hand': get_game_hand(game_id=game_id)}) if guesses_ready else []
+    hand_guesses = remove_fields(object=HandGuess, fields=['writer'], filters={'hand': get_game_hand(game_id=game_id), 'is_correct': False})
+
+    guesses = [Guess.objects.get(pk=hg.guess_id) for hg in hand_guesses] if guesses_ready else []
 
     context = {
         'hand': hand,
