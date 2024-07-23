@@ -157,7 +157,7 @@ class HandGuess(models.Model):
     
 
 class Vote(models.Model):
-    to = models.ForeignKey(HandGuess, on_delete=models.PROTECT)
+    to = models.ForeignKey(HandGuess, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.PROTECT) # TODO: Think about on delete and update.
     created_at = models.DateTimeField(default=timezone.now)
 
