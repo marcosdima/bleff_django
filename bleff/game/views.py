@@ -32,8 +32,12 @@ def handle_redirection(request):
     already_made_guess = Guess.objects.filter(hand=get_game_hand(game_id=game.id), writer=request.user).exists()
     if not already_made_guess:
         return HttpResponseRedirect(reverse("game:hand", args=(game.id,)))
-    
-    # If the guess was already made.
+  
+    # If the guess was already made and you are the leader, then you must check.
+    if is_leader(request.user, game_id=game.id) and HandGuess.objects.filter(is_correct=None).exists():
+        return HttpResponseRedirect(reverse("game:check_guesses", args=(game.id,)))
+
+    # If the guess was already made and you are not the leader, or leader already checked.
     return HttpResponseRedirect(reverse("game:guesses", args=(game.id,)))
 
 
@@ -72,6 +76,15 @@ class IndexView(generic.ListView):
 class WaitingView(LoginRequiredMixin, generic.ListView):
     model = User
     template_name = "game/waiting.html"
+
+
+    def dispatch(self, request, *args, **kwargs):
+        game_id = kwargs.get('game_id', None)
+
+        if Hand.objects.filter(game__id=game_id).exists():
+            return handle_redirection(request=request)
+
+        return super().dispatch(request, *args, **kwargs)
 
 
     def get_context_data(self, **kwargs):
@@ -192,15 +205,15 @@ def guesses_view(request, game_id):
     template_name = "game/guesses.html"
     hand = get_game_hand(game_id=game_id)
     game = Game.objects.get(id=game_id)
-    guesses = remove_fields(object=Guess, fields=['writer'], filters={'hand': get_game_hand(game_id=game_id)})
 
-    # +1 because there is a default guess that was not writed by an user.
-    guesses_ready = len(guesses) == Play.objects.filter(game=game_id).count() + 1
+    guesses_ready = not HandGuess.objects.filter(hand=hand, is_correct=None).exists()
+
+    guesses = remove_fields(object=Guess, fields=['writer'], filters={'hand': get_game_hand(game_id=game_id)}) if guesses_ready else []
 
     context = {
         'hand': hand,
         'game': game,
-        'guesses': guesses if guesses_ready else []
+        'guesses': guesses
     }
         
     return render(request=request, template_name=template_name, context=context)
@@ -211,24 +224,26 @@ def guesses_view(request, game_id):
 @leader_required(handle_redirection)
 @conditions_met(handle_redirection)
 def check_guesses(request, game_id):
-    if request.method == 'post':
-        guess_id = request.POST['guess_id']
-        mark_as = request.POST['status']
+    hand = get_game_hand(game_id=game_id)
+    guesses = [hg.guess for hg in HandGuess.objects.filter(hand=hand, is_correct=None)]
 
-        guess = get_object_or_404(HandGuess, id=guess_id)
-
-        guess.is_correct = mark_as
-        guess_updated = update_or_none(model=guess)
-
-        return HttpResponseRedirect(reverse("game:check_guesses", args=(game_id,))) if guess_updated else handle_redirection(request=request)
-
-    guesses = HandGuess.objects.filter(game=game_id)
     if len(guesses) == 0:
         return HttpResponseRedirect(reverse("game:guesses", args=(game_id,)))
 
-    context = { 'guesses': guesses }
+    if request.method == 'POST':
+        for g in guesses:
+            set_as = request.POST[str(g.id)]
 
-    return render(request, 'game:check_guesses', context)
+            if set_as:
+                hand_guess = get_object_or_404(HandGuess, hand=hand, guess=g)
+                hand_guess.is_correct = True if set_as == 'True' else False
+                update_or_none(hand_guess)
+
+        return HttpResponseRedirect(reverse("game:guesses", args=(game_id,)))
+
+    context = { 'guesses': guesses, 'game_id': game_id }
+
+    return render(request=request, template_name='game/check_guesses.html', context=context)
     
 
 @login_required
