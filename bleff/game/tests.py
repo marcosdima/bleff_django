@@ -1393,6 +1393,38 @@ class CheckGuessesViewTest(TestCase):
         self.assertEqual(response.url, reverse('game:guesses', args=[self.game.id]))
 
 
+    def test_check_guesses_post(self):
+        '''
+            Get to check_guesses.
+        '''
+        login_root_user(self)
+
+        data = {
+            self.root_guess.id: False 
+        }
+        response = self.client.post(reverse('game:check_guesses', args=[self.game.id]), data=data)
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('game:guesses', args=[self.game.id]))
+        self.assertEqual(HandGuess.objects.filter(hand=self.hand, is_correct=False).count(), 2)
+
+
+    def test_check_guesses_post_but_removing(self):
+        '''
+            Get to check_guesses.
+        '''
+        login_root_user(self)
+
+        data = {
+            self.root_guess.id: True 
+        }
+        response = self.client.post(reverse('game:check_guesses', args=[self.game.id]), data=data)
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('game:guesses', args=[self.game.id]))
+        self.assertEqual(HandGuess.objects.filter(hand=self.hand, is_correct=False).count(), 1)
+
+
 class VoteViewTest(TestCase):
     def setUp(self):
         self.user = create_root_user()
