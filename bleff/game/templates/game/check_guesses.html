@@ -14,8 +14,8 @@
                 <fieldset>
                     <label>{{ hand.word.word }} means: {{ guess.content }}</label>
                     <select id="{{guess.id}}" name="{{guess.id}}">
-                        <option value="False" data-info='{"id": 1, "name": "Option 1"}'>Ok</option>
-                        <option value="True" data-info='{"id": 1, "name": "Option 1"}'>Remove</option>
+                        <option value="False">Ok</option>
+                        <option value="True">Remove</option>
                     </select>
                 </fieldset>
             {% endfor %}
