@@ -1348,6 +1348,51 @@ class MakeGuessViewTest(TestCase):
         self.assertEqual(response.url, reverse('game:index'))
 
 
+class CheckGuessesViewTest(TestCase):
+    def setUp(self):
+        self.user = create_root_user()
+        self.secondaryUser = create_secondary_user()
+        self.lang = create_basic_language()
+        self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+
+        self.words = ['Cow', 'Diary', 'Python', 'Goose', 'Cheese']
+        for word in self.words:
+            create_word_meaning(word=word, language=self.lang, content=f'An explanation of what "{word}" is in English.', word_translation=word)
+
+        self.word = Word.objects.get(word=self.words[0])
+        self.word_2 = Word.objects.get(word=self.words[1])
+
+        self.hand = Hand.objects.create(game=self.game, leader=self.user)
+        self.hand.word = self.word
+        self.hand.save()
+  
+        self.root_guess = Guess.objects.create(writer=self.user, content='A content sdasdasdasdasda', hand=self.hand)
+
+
+    def test_check_guesses(self):
+        '''
+            Get to check_guesses.
+        '''
+        login_root_user(self)
+        response = self.client.get(reverse('game:check_guesses', args=[self.game.id]))
+        
+        self.assertContains(response=response, text= 'Check guesses', status_code=200)
+
+
+    def test_check_guesses_but_you_are_not_the_leader(self):
+        '''
+            Get to check_guesses.
+        '''
+        Play.objects.create(game=self.game, user=self.secondaryUser)
+        Guess.objects.create(writer=self.secondaryUser, content='A content sdasdasdasdasda 2', hand=self.hand)
+
+        login_secondary_user(self)
+        
+        response = self.client.get(reverse('game:check_guesses', args=[self.game.id]))
+        
+        self.assertEqual(response.url, reverse('game:guesses', args=[self.game.id]))
+
+
 class VoteViewTest(TestCase):
     def setUp(self):
         self.user = create_root_user()
