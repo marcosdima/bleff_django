@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bleff</title>
+</head>
+<body>
+    {% if guesses %}
+        <form action="{% url 'game:check_guesses' game_id %}" method="post">
+            {% csrf_token %}
+            <legend><h2>Check guesses</h2></legend>
+            {% for guess in guesses %}
+                <fieldset>
+                    <label>{{ hand.word.word }} means: {{ guess.content }}</label>
+                    <select id="{{guess.id}}" name="{{guess.id}}">
+                        <option value="False" data-info='{"id": 1, "name": "Option 1"}'>Ok</option>
+                        <option value="True" data-info='{"id": 1, "name": "Option 1"}'>Remove</option>
+                    </select>
+                </fieldset>
+            {% endfor %}
+            <input type="submit" value="Ready">
+        </form>
+    {% else %}
+        <div>Waiting for other guesses</div>
+    {% endif %}
+</body>
+</html>
