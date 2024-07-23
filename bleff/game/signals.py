@@ -21,7 +21,7 @@ def right_guess_creator(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Guess)
 def handguess_creator(sender, instance, created, **kwargs):
     if created:
-        HandGuess.objects.create(hand=instance.hand, guess=instance)
+        HandGuess.objects.create(hand=instance.hand, guess=instance, is_correct=None if not instance.is_original else True)
 
 
 @receiver(pre_save, sender=HandGuess)
