@@ -16,4 +16,5 @@ urlpatterns = [
     path("<int:game_id>/hand/guesses/check", views.check_guesses, name="check_guesses"),
     path("<int:game_id>/hand/guesses/", views.guesses_view, name="guesses"),
     path("<int:game_id>/hand/guess/vote", views.vote, name="vote"),
+    path("hand/<int:hand_id>/", views.hand_detail, name="hand_detail"),
 ]
