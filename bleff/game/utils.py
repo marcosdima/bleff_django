@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.db.models import Model
 
-from .models import Hand, Play, Choice, Game, Condition, HandGuess
+from .models import Hand, Play, Choice, Game, Condition, HandGuess, Vote
 
 class FilteredObject:
     def __init__(self, dictionary: dict) -> None:
@@ -40,7 +40,8 @@ def is_leader(user: User, game_id: int) -> bool:
 def get_game_hand(game_id: int):
     # Check if exists a hand
     if Hand.objects.all().exists():
-        return Hand.objects.get(game=game_id, finished_at=None)
+        exists = Hand.objects.filter(game=game_id, finished_at=None).exists() 
+        return Hand.objects.get(game=game_id, finished_at=None) if exists else None 
 
 
 def get_hand_choice_words(hand: Hand) -> list:
@@ -81,3 +82,15 @@ def is_leader(user: User, game_id: int) -> bool:
 
 def there_are_guesses_to_check(game_id: int) -> bool:
     return HandGuess.objects.filter(hand=get_game_hand(game_id=game_id), is_correct=None).exists()
+
+
+def votes_remaining(game_id: int) -> int:
+    # -1 beacuse exists a HandGuess made by default.
+    hand_guesses = [hg.id for hg in HandGuess.objects.filter(hand=get_game_hand(game_id=game_id), is_correct=False)]
+    num_of_votants = len(hand_guesses) - 1
+
+    return Vote.objects.filter(to_id__in=hand_guesses).count() - num_of_votants
+
+
+def already_vote(user: User, game_id: int) -> bool:
+    return Vote.objects.filter(user=user, to__hand=get_game_hand(game_id=game_id)).exists()

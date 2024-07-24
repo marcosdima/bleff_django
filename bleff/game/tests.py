@@ -953,6 +953,61 @@ class UtilsFunctionsTest(TestCase):
         self.assertTrue(utils.there_are_guesses_to_check(game_id=self.game.id))
 
 
+    def test_votes_remaining(self):
+        '''
+            This function should return the number of votes remaining.
+        '''
+        content = 'aaaaaaaaaaaaaaaaaaaaaaaaa'
+        hand = Hand.objects.create(game=self.game)
+        Guess.objects.create(content=content, writer=self.user, hand=hand)
+
+        self.assertEqual(utils.votes_remaining(game_id=self.game.id), 1)
+
+
+    def test_votes_remaining_after_vote(self):
+        '''
+            This function should return the number of votes remaining.
+        '''
+        content = 'aaaaaaaaaaaaaaaaaaaaaaaaa'
+        hand = Hand.objects.create(game=self.game, word=self.word)
+        guess = Guess.objects.create(content=content, writer=self.user, hand=hand)
+        hg = HandGuess.objects.get(hand=hand, guess=guess)
+        hg.is_correct = False
+        hg.save()
+        
+        Vote.objects.create(user=self.user, to=hg)
+        self.assertEqual(utils.votes_remaining(game_id=self.game.id), 0)
+
+
+    def test_already_vote(self):
+        '''
+            This function should return True if user already vote.
+        '''
+        content = 'aaaaaaaaaaaaaaaaaaaaaaaaa'
+        hand = Hand.objects.create(game=self.game, word=self.word)
+        guess = Guess.objects.create(content=content, writer=self.user, hand=hand)
+        hg = HandGuess.objects.get(hand=hand, guess=guess)
+        hg.is_correct = False
+        hg.save()
+        
+        Vote.objects.create(user=self.user, to=hg)
+        self.assertTrue(utils.already_vote(user=self.user, game_id=self.game.id))
+
+
+    def test_already_vote(self):
+        '''
+            This function should return False if user does not vote yet.
+        '''
+        content = 'aaaaaaaaaaaaaaaaaaaaaaaaa'
+        hand = Hand.objects.create(game=self.game, word=self.word)
+        guess = Guess.objects.create(content=content, writer=self.user, hand=hand)
+        hg = HandGuess.objects.get(hand=hand, guess=guess)
+        hg.is_correct = False
+        hg.save()
+
+        self.assertFalse(utils.already_vote(user=self.user, game_id=self.game.id))
+
+
 class GameViewTest(TestCase):
     def setUp(self):
         self.user = create_root_user()
