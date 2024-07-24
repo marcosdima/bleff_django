@@ -144,10 +144,11 @@ def create_game(request):
 
     game = create_or_none(model=Game, fields={'creator': request.user, 'idiom': language})
 
-    condition_tags = ConditionTag.objects.all()
-    for tag in condition_tags:
-        if tag.tag in request.POST:
-            create_or_none(model=Condition, fields={'game': game, 'tag': tag, 'value': int(request.POST[tag.tag])})
+    if game:
+        condition_tags = ConditionTag.objects.all()
+        for tag in condition_tags:
+            if tag.tag in request.POST:
+                create_or_none(model=Condition, fields={'game': game, 'tag': tag, 'value': int(request.POST[tag.tag])})
 
     return redirect('game:waiting', game_id=game.id) if game else handle_redirection(request=request)
 
