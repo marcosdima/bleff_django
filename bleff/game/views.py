@@ -8,7 +8,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.http import require_POST, require_GET
 from django.db.models import Model
 
-from .models import Game, HandGuess, Language, Play, Hand, Vote, Word, Guess
+from .models import Game, HandGuess, Language, Play, Hand, Vote, Word, Guess, ConditionTag, Condition
 from .utils import plays_game, get_game_hand, get_hand_choice_words, remove_fields, conditions_are_met, is_leader, votes_remaining, already_vote, last_hand
 from .decorators import play_required, leader_required, conditions_met
 
@@ -79,8 +79,12 @@ class IndexView(generic.ListView):
 
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)    
+        context = super().get_context_data(**kwargs)
+
         context['languages'] = Language.objects.all()
+
+        context['conditions'] = [(c.tag, range(c.min, c.max + 1)) for c in ConditionTag.objects.all()]
+
         return context
 
 
@@ -90,8 +94,10 @@ class WaitingView(LoginRequiredMixin, generic.ListView):
 
 
     def dispatch(self, request, *args, **kwargs):
+        
         game_id = kwargs.get('game_id', None)
 
+        # TODO: fix error if game does not exists.
         if Hand.objects.filter(game__id=game_id).exists():
             return handle_redirection(request=request)
 
@@ -133,9 +139,16 @@ def enter_game(request):
 @login_required
 @require_POST
 def create_game(request):
-    language_tag = request.POST['language_tag']
+    language_tag = request.POST['language']
     language = get_object_or_404(Language, tag=language_tag)
+
     game = create_or_none(model=Game, fields={'creator': request.user, 'idiom': language})
+
+    condition_tags = ConditionTag.objects.all()
+    for tag in condition_tags:
+        if tag.tag in request.POST:
+            create_or_none(model=Condition, fields={'game': game, 'tag': tag, 'value': int(request.POST[tag.tag])})
+
     return redirect('game:waiting', game_id=game.id) if game else handle_redirection(request=request)
 
 
