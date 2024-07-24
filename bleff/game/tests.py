@@ -48,6 +48,10 @@ def create_n_players(n: int, game: Game):
     return [create_user_and_play(username=f'TestUser °{i}', password=f'{str(i) * 3}', game=game) for i in range(n)]
 
 
+def create_condition_tag(tag: str) -> ConditionTag:
+    return ConditionTag.objects.create(tag=tag, max=4, min=4)
+
+
 class WordModelTest(TestCase):
     def test_create_a_word(self):
         '''
@@ -776,8 +780,8 @@ class UtilsFunctionsTest(TestCase):
         self.word = Word.objects.get(word=self.words[0])
         self.word_2 = Word.objects.get(word=self.words[1])
 
-        self.max = ConditionTag.objects.create(tag='MAX_PLAYERS')
-        self.min = ConditionTag.objects.create(tag='MIN_PLAYERS')
+        self.max = create_condition_tag(tag='MAX_PLAYERS')
+        self.min = create_condition_tag(tag='MIN_PLAYERS')
     
 
     def test_plays_game_function_should_be_true(self):
@@ -889,9 +893,9 @@ class UtilsFunctionsTest(TestCase):
         '''
             conditions_are_met function should validate that the conditions, if exists, are met.
         '''
-        Condition.objects.create(game=self.game, tag=self.max, value=6)
+        Condition.objects.create(game=self.game, tag=self.max, value=4)
         Condition.objects.create(game=self.game, tag=self.min, value=4)
-        create_n_players(n=5, game=self.game)
+        create_n_players(n=3, game=self.game)
         self.assertEqual(len(utils.conditions_are_met(game_id=self.game.id)), 0)
 
 
@@ -906,7 +910,7 @@ class UtilsFunctionsTest(TestCase):
         '''
             There is a condition of 10 players min, so conditions are not met.
         '''
-        Condition.objects.create(game=self.game, tag=self.min, value=5)
+        Condition.objects.create(game=self.game, tag=self.min, value=self.min.min)
         self.assertEqual(len(utils.conditions_are_met(game_id=self.game.id)), 1)
 
 
@@ -914,7 +918,7 @@ class UtilsFunctionsTest(TestCase):
         '''
             There is a condition of 10 players min, so conditions are not met.
         '''
-        Condition.objects.create(game=self.game, tag=self.max, value=5)
+        Condition.objects.create(game=self.game, tag=self.max, value=self.min.min)
         create_n_players(n=10, game=self.game)
         self.assertEqual(len(utils.conditions_are_met(game_id=self.game.id)), 1)
 
@@ -1105,6 +1109,8 @@ class CreateGameViewTest(TestCase):
         self.user = create_root_user()
         self.lang = create_basic_language()
         self.secondaryUser = create_secondary_user()
+        self.max = create_condition_tag(tag='MAX_PLAYERS')
+        self.min = create_condition_tag(tag='MIN_PLAYERS')
 
     
     def test_create_a_game(self):
@@ -1112,7 +1118,8 @@ class CreateGameViewTest(TestCase):
             An user tries to create a game.
         '''
         login_root_user(self)
-        response = self.client.post(path=reverse('game:create'), data={'language_tag': self.lang.tag})
+        data = {'language': self.lang.tag, self.max.tag: self.max.min, self.min.tag: self.min.min, }
+        response = self.client.post(path=reverse('game:create'), data=data)
         game = Game.objects.all()[0]
 
         self.assertEqual(response.url, reverse('game:waiting', args=[game.id]))
@@ -1126,7 +1133,8 @@ class CreateGameViewTest(TestCase):
         game = Game.objects.create(idiom=self.lang, creator=self.user)
         self.assertEqual(Game.objects.all().count(), 1)
 
-        response = self.client.post(path=reverse('game:create'), data={'language_tag': self.lang.tag})
+        data = {'language': self.lang.tag, self.max.tag: self.max.min, self.min.tag: self.min.min, }
+        response = self.client.post(path=reverse('game:create'), data=data)
         self.assertEqual(Game.objects.all().count(), 1)
         self.assertEqual(response.url, reverse('game:waiting', args=[game.id]))
 
@@ -1237,7 +1245,7 @@ class StartGameViewTest(TestCase):
             The game does not met the conditions setted, so should stay in waiting 
         '''
         login_root_user(self)
-        Condition.objects.create(game=self.game, tag=ConditionTag.objects.create(tag="MIN_PLAYERS"), value=5)
+        Condition.objects.create(game=self.game, tag=create_condition_tag(tag="MIN_PLAYERS"), value=4)
         response = self.client.post(reverse('game:start_game', args=[self.game.id]))
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('game:waiting', args=[self.game.id]))
