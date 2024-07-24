@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST, require_GET
 from django.db.models import Model
 
 from .models import Game, HandGuess, Language, Play, Hand, Vote, Word, Guess
-from .utils import plays_game, get_game_hand, get_hand_choice_words, remove_fields, conditions_are_met, is_leader
+from .utils import plays_game, get_game_hand, get_hand_choice_words, remove_fields, conditions_are_met, is_leader, votes_remaining, already_vote
 from .decorators import play_required, leader_required, conditions_met
 
 def handle_redirection(request):
@@ -34,11 +34,16 @@ def handle_redirection(request):
         return HttpResponseRedirect(reverse("game:hand", args=(game.id,)))
   
     # If the guess was already made and you are the leader, then you must check.
-    if is_leader(request.user, game_id=game.id) and HandGuess.objects.filter(is_correct=None).exists():
+    is_leader_var = is_leader(request.user, game_id=game.id)
+    if is_leader_var and HandGuess.objects.filter(is_correct=None).exists():
         return HttpResponseRedirect(reverse("game:check_guesses", args=(game.id,)))
 
     # If the guess was already made and you are not the leader, or leader already checked.
-    return HttpResponseRedirect(reverse("game:guesses", args=(game.id,)))
+    if not is_leader_var and not already_vote(user=request.user, game_id=game.id):
+        HttpResponseRedirect(reverse("game:guesses", args=(game.id,)))
+
+    # If you already vote, then go to the end.
+    return HttpResponseRedirect(reverse("game:hand_detail", args=(get_game_hand(game_id=game.id).id,)))
 
 
 def create_or_none(model: Model, fields):
@@ -198,9 +203,10 @@ def make_guess(request, game_id):
 @play_required(handle_redirection)
 @conditions_met(handle_redirection)
 def guesses_view(request, game_id):
-
-    if is_leader(user=request.user, game_id=game_id) and HandGuess.objects.filter(is_correct=None).exists():
+    if is_leader(user=request.user, game_id=game_id):
         return HttpResponseRedirect(reverse("game:check_guesses", args=(game_id,)))
+    elif already_vote(user=request.user, game_id=game_id):
+        return handle_redirection(request=request)
 
     template_name = "game/guesses.html"
     hand = get_game_hand(game_id=game_id)
@@ -230,7 +236,7 @@ def check_guesses(request, game_id):
     guesses = [hg.guess for hg in HandGuess.objects.filter(hand=hand, is_correct=None)]
 
     if len(guesses) == 0:
-        return HttpResponseRedirect(reverse("game:guesses", args=(game_id,)))
+        return handle_redirection(request=request)
 
     if request.method == 'POST':
         for g in guesses:
@@ -241,7 +247,7 @@ def check_guesses(request, game_id):
                 hand_guess.is_correct = True if set_as == 'True' else False
                 update_or_none(hand_guess)
 
-        return HttpResponseRedirect(reverse("game:guesses", args=(game_id,)))
+        return handle_redirection(request=request)
 
     context = { 'guesses': guesses, 'game_id': game_id }
 
@@ -256,6 +262,35 @@ def vote(request, game_id):
     guess = get_object_or_404(Guess, writer=request.user, hand=get_game_hand(game_id=game_id))
     guess_hand = get_object_or_404(HandGuess, guess=guess)
 
-    vote = create_or_none(model=Vote, fields={'to': guess_hand, 'user':request.user})
+    create_or_none(model=Vote, fields={'to': guess_hand, 'user':request.user})
 
-    return HttpResponseRedirect(reverse("game:guesses", args=(game_id,))) if vote else handle_redirection(request=request)
+    if not votes_remaining(game_id=game_id):
+        hand = get_game_hand(game_id=game_id)
+        if hand: 
+            hand.end()
+
+    return handle_redirection(request=request)
+
+
+@require_GET
+def hand_detail(request, hand_id):
+    hand = get_object_or_404(Hand, id=hand_id)
+
+    hand_guesses = [hg.id for hg in HandGuess.objects.filter(hand=hand)]
+    votes = Vote.objects.filter(to_id__in=hand_guesses)
+
+    if not hand.finished_at:
+        return render(request=request, template_name='game/hand_detail.html', context={'hand': hand, 'votes': votes})
+
+    guesses = [hg.guess for hg in HandGuess.objects.filter(hand=hand, guess__writer__isnull=False)]
+
+    for guess in guesses:
+        guess.votes = Vote.objects.filter(to__guess=guess).count()
+
+    context = {
+        'hand': hand,
+        'votes': Vote.objects.filter(to_id__in=hand_guesses),
+        'guesses': guesses,
+    }
+
+    return render(request=request, template_name='game/hand_detail.html', context=context)
