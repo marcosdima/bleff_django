@@ -615,16 +615,19 @@ class HandGuessModelTest(TestCase):
 
     def test_is_correct_should_be_false_by_default(self):
         '''
-            Check if is_correct field has the value False by default.
+            Check if is_correct field has the value None by default.
         '''
         guess = Guess.objects.create(hand=self.hand, content=self.content, writer=self.user)
-        self.assertEqual(False, HandGuess.objects.get(hand=self.hand, guess=guess).is_correct)
+        self.assertEqual(None, HandGuess.objects.get(hand=self.hand, guess=guess).is_correct)
 
 
     def test_is_correct_can_be_changed(self):
+        '''
+            Change the value of is correct.
+        '''
         guess = Guess.objects.create(hand=self.hand, writer=self.user)
         handguess = HandGuess.objects.get(hand=self.hand, guess=guess)
-        self.assertEqual(False, handguess.is_correct)
+        self.assertEqual(None, handguess.is_correct)
         
         handguess.is_correct = True
         handguess.save()
@@ -1460,7 +1463,7 @@ class CheckGuessesViewTest(TestCase):
         response = self.client.post(reverse('game:check_guesses', args=[self.game.id]), data=data)
         
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse('game:guesses', args=[self.game.id]))
+        self.assertEqual(response.url, reverse('game:hand_detail', args=[self.game.id]))
         self.assertEqual(HandGuess.objects.filter(hand=self.hand, is_correct=False).count(), 2)
 
 
@@ -1476,7 +1479,7 @@ class CheckGuessesViewTest(TestCase):
         response = self.client.post(reverse('game:check_guesses', args=[self.game.id]), data=data)
         
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse('game:guesses', args=[self.game.id]))
+        self.assertEqual(response.url, reverse('game:hand_detail', args=[self.game.id]))
         self.assertEqual(HandGuess.objects.filter(hand=self.hand, is_correct=False).count(), 1)
 
 
@@ -1507,7 +1510,8 @@ class VoteViewTest(TestCase):
         '''
             Should let you vote.
         '''
+        login_root_user(self)
         response = self.client.post(path=reverse('game:vote', args=[self.game.id]))
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse('game:guesses', args=[self.game.id]))
+        self.assertEqual(response.url, reverse('game:hand_detail', args=[self.hand.id]))
