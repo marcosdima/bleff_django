@@ -2,6 +2,7 @@ from django.core.validators import MinLengthValidator
 from django.utils import timezone
 from django.forms import ValidationError
 from django.contrib.auth.models import User
+from django.db.models import F
 from django.db import models
 
 from .validators import FieldNull
@@ -188,7 +189,18 @@ class Choice(models.Model):
 
 
 class ConditionTag(models.Model):
-    tag = models.CharField(max_length=70, validators=[MinLengthValidator(7)]) # TODO: Think if instead of modify save function, create validators like MinLengthValidator
+    tag = models.CharField(max_length=70, validators=[MinLengthValidator(7)], unique=True)
+    min = models.IntegerField()
+    max = models.IntegerField()
+
+    class Meta:
+        constraints = [
+           models.CheckConstraint(check=models.Q(max__gte=F('min')), name='max_must_be_equal_or_greater_than_min')
+        ]
+
+
+    def __str__(self) -> str:
+        return self.tag
 
 
 class Condition(models.Model):
@@ -201,3 +213,10 @@ class Condition(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['game', 'tag'], name='unique_tag_per_game')
         ]
+
+
+    def save(self, *args, **kwargs):
+        if not (self.tag.min <= self.value <= self.tag.max):
+            raise ValidationError(f"Value should be an integer between {self.tag.min} and {self.tag.max}. Value received: {self.value}")
+
+        super().save(*args, **kwargs)
