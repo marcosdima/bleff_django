@@ -1011,6 +1011,34 @@ class UtilsFunctionsTest(TestCase):
         self.assertFalse(utils.already_vote(user=self.user, game_id=self.game.id))
 
 
+    def test_last_hand(self):
+        '''
+            Should return last hand played.
+        '''
+        hand = Hand.objects.create(game=self.game)
+        self.assertEqual(hand.id, utils.last_hand(game_id=self.game.id).id)
+
+    
+    def test_last_hand_with_a_finished_hand(self):
+        '''
+            Should return last hand played.
+        '''
+        hand = Hand.objects.create(game=self.game)
+        hand.end()
+
+        self.assertEqual(hand.id, utils.last_hand(game_id=self.game.id).id)
+
+
+    def test_last_hand_with_a_new_one(self):
+        '''
+            Should return last hand played.
+        '''
+        hand = Hand.objects.create(game=self.game)
+        hand.end()
+        second_hand = Hand.objects.create(game=self.game)
+        self.assertEqual(second_hand.id, utils.last_hand(game_id=self.game.id).id)
+
+
 class GameViewTest(TestCase):
     def setUp(self):
         self.user = create_root_user()

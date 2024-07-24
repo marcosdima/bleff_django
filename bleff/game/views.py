@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST, require_GET
 from django.db.models import Model
 
 from .models import Game, HandGuess, Language, Play, Hand, Vote, Word, Guess
-from .utils import plays_game, get_game_hand, get_hand_choice_words, remove_fields, conditions_are_met, is_leader, votes_remaining, already_vote
+from .utils import plays_game, get_game_hand, get_hand_choice_words, remove_fields, conditions_are_met, is_leader, votes_remaining, already_vote, last_hand
 from .decorators import play_required, leader_required, conditions_met
 
 def handle_redirection(request):
@@ -28,8 +28,14 @@ def handle_redirection(request):
     if not game_start:
         return redirect('game:waiting', game_id=game.id)
     
+    # If the game exists and there is no current hand, then the user should go to detail.
+    hand = get_game_hand(game_id=game.id)
+
+    if not hand:
+        return HttpResponseRedirect(reverse("game:hand_detail", args=(last_hand(game_id=game.id).id,)))
+
     # If the game started, and the user doesn't create a guess yet.
-    already_made_guess = Guess.objects.filter(hand=get_game_hand(game_id=game.id), writer=request.user).exists()
+    already_made_guess = Guess.objects.filter(hand=hand, writer=request.user).exists()
     if not already_made_guess:
         return HttpResponseRedirect(reverse("game:hand", args=(game.id,)))
   
@@ -40,10 +46,10 @@ def handle_redirection(request):
 
     # If the guess was already made and you are not the leader, or leader already checked.
     if not is_leader_var and not already_vote(user=request.user, game_id=game.id):
-        HttpResponseRedirect(reverse("game:guesses", args=(game.id,)))
+        return HttpResponseRedirect(reverse("game:guesses", args=(game.id,)))
 
     # If you already vote, then go to the end.
-    return HttpResponseRedirect(reverse("game:hand_detail", args=(get_game_hand(game_id=game.id).id,)))
+    return HttpResponseRedirect(reverse("game:hand_detail", args=(hand.id,)))
 
 
 def create_or_none(model: Model, fields):
@@ -140,7 +146,8 @@ def create_game(request):
 def start_game(request, game_id):
     game = Game.objects.get(pk=game_id)
 
-    start_hand = create_or_none(model=Hand, fields={'game': game})
+    # Creates hand if there is no game-hand and the player is the creator
+    start_hand = create_or_none(model=Hand, fields={'game': game}) if not game.creator or request.user == game.creator else None
 
     return HttpResponseRedirect(reverse("game:hand", args=(game_id,))) if start_hand else handle_redirection(request=request)
 
