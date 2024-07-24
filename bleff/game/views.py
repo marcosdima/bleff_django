@@ -93,8 +93,7 @@ class WaitingView(LoginRequiredMixin, generic.ListView):
     template_name = "game/waiting.html"
 
 
-    def dispatch(self, request, *args, **kwargs):
-        
+    def dispatch(self, request, *args, **kwargs): 
         game_id = kwargs.get('game_id', None)
 
         # TODO: fix error if game does not exists.
@@ -109,6 +108,7 @@ class WaitingView(LoginRequiredMixin, generic.ListView):
         id = self.kwargs.get('game_id') 
         game = Game.objects.get(id=id)
         context['game'] = game
+        context['conditions'] = Condition.objects.filter(game=game)
         return context
 
 

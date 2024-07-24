@@ -6,14 +6,22 @@
     <title>Bleff</title>
 </head>
 <body>
+    
+
     {% for user in object_list %}
         <h1>{{forloop.counter}}. {{user.username}}</h1>
     {% endfor %}
+
     {% if not game.creator or game.creator.id == user.id %}
         <form action="{% url 'game:start_game' game.id %}" method="post">
             {% csrf_token %}
             <input type="submit" value="Start Game">
         </form>
     {% endif %}
+
+    <div>Players Count: {{object_list|length}}</div>
+    {% for condition in conditions %}
+        <div>{{condition.tag}}: {{condition.value}}</div>
+    {% endfor %}
 </body>
 </html>
