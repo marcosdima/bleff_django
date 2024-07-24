@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bleff</title>
+</head>
+<body>
+    <h1>Hand: {{ hand.word }}</h1>
+    {% for vote in votes %}
+    <div>
+        <label>~ Vote {{ vote.to.guess.content }} from {{ vote.user }}</label>
+    </div>
+    {% endfor %}
+    <hr>
+    {% if hand.finished_at %}
+        {% for guess in guesses %}
+        <div>
+            <label>{{ hand.word.word }} guess: '{{ guess.content }}' by {{ guess.writer }}. Votes: {{ guess.votes }}</label>
+        </div>
+        {% endfor %}
+    {% endif %}
+</body>
+</html>
