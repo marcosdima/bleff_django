@@ -1,3 +1,6 @@
 from django.shortcuts import render
+from django.views.decorators.http import require_GET
 
-# Create your views here.
+@require_GET
+def main(request):
+    return render(request=request, template_name='menu/main_menu.html')
