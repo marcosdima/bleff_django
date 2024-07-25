@@ -5,6 +5,7 @@ from django.forms import ValidationError
 from django.conf import settings
 
 from .models import Game, Play, Hand, Guess, Meaning, HandGuess, Vote, Choice, Word
+from .utils import plays_game
 
 @receiver(post_save, sender=Game)
 def play_creation_creator(sender, instance, created, **kwargs):
@@ -42,7 +43,9 @@ def handguess_update_restriction(sender, instance, **kwargs):
 @receiver(pre_save, sender=Vote)
 def vote_creator_restriction(sender, instance, **kwargs):
     if not instance.pk:
-        if instance.to.hand.finished_at:
+        if not plays_game(user=instance.user, game_id=instance.to.hand.game):
+            raise ValidationError("You can't vote in a game you are not playing")
+        elif instance.to.hand.finished_at:
             raise ValidationError("You can't vote in a finished hand")
         elif Vote.objects.filter(to__hand=instance.to.hand, user=instance.user).exists():
             raise ValidationError("You can't vote again in the same hand")
