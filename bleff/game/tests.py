@@ -48,8 +48,8 @@ def create_n_players(n: int, game: Game):
     return [create_user_and_play(username=f'TestUser °{i}', password=f'{str(i) * 3}', game=game) for i in range(n)]
 
 
-def create_condition_tag(tag: str) -> ConditionTag:
-    return ConditionTag.objects.create(tag=tag, max=4, min=4)
+def create_condition_tag(tag: str, max: int = 4, min: int = 4) -> ConditionTag:
+    return ConditionTag.objects.create(tag=tag, max=max, min=min)
 
 
 class WordModelTest(TestCase):
@@ -1109,8 +1109,8 @@ class CreateGameViewTest(TestCase):
         self.user = create_root_user()
         self.lang = create_basic_language()
         self.secondaryUser = create_secondary_user()
-        self.max = create_condition_tag(tag='MAX_PLAYERS')
-        self.min = create_condition_tag(tag='MIN_PLAYERS')
+        self.max = create_condition_tag(tag='MAX_PLAYERS', max=8, min=4)
+        self.min = create_condition_tag(tag='MIN_PLAYERS', max=10, min=4)
 
     
     def test_create_a_game(self):
@@ -1137,6 +1137,18 @@ class CreateGameViewTest(TestCase):
         response = self.client.post(path=reverse('game:create'), data=data)
         self.assertEqual(Game.objects.all().count(), 1)
         self.assertEqual(response.url, reverse('game:waiting', args=[game.id]))
+
+
+    def test_create_a_game_but_conditions_contradiction(self):
+        '''
+            If MIN_PLAYERS has a value grater than MAX_PLAYERS, then should raise a validation error.
+        '''
+        login_root_user(self)
+        data = {'language': self.lang.tag, self.max.tag: self.max.min, self.min.tag: 9, }
+        response = self.client.post(path=reverse('game:create'), data=data)
+
+        self.assertEqual(Game.objects.all().count(), 0)
+        self.assertEqual(response.url, reverse('game:index'))
 
 
 class WaitingViewTest(TestCase):
