@@ -150,9 +150,16 @@ def create_game(request):
 
     if game:
         condition_tags = ConditionTag.objects.all()
+
+        copy = request.POST.copy()
+
+        # TODO: This should work now, but it's not the best solution.
+        if copy['MAX_PLAYERS'] < copy['MIN_PLAYERS']:
+            copy['MAX_PLAYERS'] = copy['MIN_PLAYERS']
+
         for tag in condition_tags:
-            if tag.tag in request.POST:
-                create_or_none(model=Condition, fields={'game': game, 'tag': tag, 'value': int(request.POST[tag.tag])})
+            if tag.tag in copy:
+                create_or_none(model=Condition, fields={'game': game, 'tag': tag, 'value': int(copy[tag.tag])})
 
     return redirect('game:waiting', game_id=game.id) if game else handle_redirection(request=request)
 
