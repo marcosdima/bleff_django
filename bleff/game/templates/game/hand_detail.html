@@ -20,5 +20,12 @@
         </div>
         {% endfor %}
     {% endif %}
+    <hr>
+    {% if not game.creator or game.creator.id == user.id %}
+        <form action="{% url 'game:start_game' hand.game.id %}" method="post">
+            {% csrf_token %}
+            <input type="submit" value="Next Hand">
+        </form>
+    {% endif %}
 </body>
 </html>
