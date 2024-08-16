@@ -131,3 +131,6 @@ LOGOUT_REDIRECT_URL = '/admin'
 LOGIN_URL = '/users/login/'
 
 CHOICES_PER_HAND = 5
+
+# Channels
+ASGI_APPLICATION = "bleff.asgi.application"
