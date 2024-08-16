@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'users.apps.UsersConfig',
     'game.apps.GameConfig',
     'menu.apps.MenuConfig',
