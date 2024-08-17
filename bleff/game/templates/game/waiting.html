@@ -1,9 +1,16 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bleff</title>
+    <script type="text/javascript">
+        const gameId= '{{ game.id }}'
+        const username = '{{ user.username }}'
+    </script>
+    <script src="{% static 'game/js/waiting_socket.js' %}" type="module"></script>
 </head>
 <body>
     <ul id="usernames">
@@ -23,47 +30,5 @@
     {% for condition in conditions %}
         <div>{{condition.tag}}: {{condition.value}}</div>
     {% endfor %}
-
-    <script>
-        const game_id = '{{ game.id }}'
-        const username = '{{ user.username }}'
-
-        const chatSocket = new WebSocket(
-            'ws://'
-            + window.location.host
-            + '/ws/game/'
-            + game_id
-            + '/'
-        );
-
-        chatSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            const new_username = data.player_username;
-            const usernames = document.getElementById('usernames');
-
-            // If the username is the same as the current user or already was added...
-            if (username === new_username || document.getElementById(new_username)) return;
-
-            const newItem = document.createElement('li');
-            const h1Item = document.createElement('h1');
-
-            h1Item.textContent = new_username;
-            newItem.id = new_username;
-
-            newItem.appendChild(h1Item);
-            usernames.appendChild(newItem);
-        };
-
-        chatSocket.onclose = function(e) {
-            console.error('Chat socket closed unexpectedly');
-        };
-
-        chatSocket.onopen =  function(e) {
-            chatSocket.send(JSON.stringify({
-                'player_username': username,
-                'event_type': 'player_join'
-            }));
-        };
-    </script>
 </body>
 </html>
