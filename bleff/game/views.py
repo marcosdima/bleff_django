@@ -88,34 +88,23 @@ class IndexView(generic.ListView):
         return context
 
 
-class WaitingView(LoginRequiredMixin, generic.ListView):
-    model = User
-    template_name = "game/waiting.html"
+@login_required
+@require_GET
+def waiting(request, game_id):
+    game = Game.objects.get(id=game_id)
+    conditions = Condition.objects.filter(game=game)
+    users = [p.user.username for p in Play.objects.filter(game=game_id)]
 
+    return render(
+        request, 
+        'game/waiting.html', 
+        {
+            'users': users, 
+            'conditions': conditions, 
+            'game': game
+        }
+    )
 
-    def dispatch(self, request, *args, **kwargs): 
-        game_id = kwargs.get('game_id', None)
-
-        # TODO: fix error if game does not exists.
-        if Hand.objects.filter(game__id=game_id).exists():
-            return handle_redirection(request=request)
-
-        return super().dispatch(request, *args, **kwargs)
-
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)    
-        id = self.kwargs.get('game_id') 
-        game = Game.objects.get(id=id)
-        context['game'] = game
-        context['conditions'] = Condition.objects.filter(game=game)
-        return context
-
-
-    def get_queryset(self): 
-        id = self.kwargs.get('game_id')
-        return [p.user for p in Play.objects.filter(game=id)]
-    
 
 @login_required
 @require_POST
