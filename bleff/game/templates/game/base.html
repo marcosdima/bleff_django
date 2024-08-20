@@ -1,0 +1,21 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bleff</title>
+    <script type="text/javascript">
+        const gameId= '{{ game_id }}'
+        const USERNAME = '{{ user.username }}'
+    </script>
+    <script src="{% static 'game/js/WebSocketManager.js' %}" type="module"></script>
+    <script src="{% static 'game/js/WebSocketSetup.js' %}" type="module"></script>
+</head>
+<body>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
