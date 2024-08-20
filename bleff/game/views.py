@@ -7,6 +7,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.http import require_POST, require_GET
 from django.db.models import Model
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 from .models import Game, HandGuess, Language, Play, Hand, Vote, Word, Guess, ConditionTag, Condition
 from .utils import plays_game, get_game_hand, get_hand_choice_words, remove_fields, conditions_are_met, is_leader, votes_remaining, already_vote, last_hand
@@ -211,12 +213,27 @@ def make_guess(request, game_id):
     guess = request.POST['guess']
     hand = get_game_hand(game_id=game_id)
 
-    guess = create_or_none(model=Guess, fields={'hand': hand, 'writer':request.user, 'content': guess})
+    guess_created = create_or_none(model=Guess, fields={'hand': hand, 'writer':request.user, 'content': guess})
 
-    if guess and request.user.id == hand.leader.id:
+    if guess_created and request.user.id == hand.leader.id:
         return HttpResponseRedirect(reverse("game:check_guesses", args=(game_id,)))
+    
 
-    return HttpResponseRedirect(reverse("game:guesses", args=(game_id,))) if guess else handle_redirection(request=request)
+    if (guess_created):
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'game_{game_id}',
+            {
+                'type': 'new_guess',
+                'new_guess': {
+                    'content': guess,
+                    'id': guess_created.id,
+                    'word': hand.word.word
+                }
+            }
+        )
+
+    return HttpResponseRedirect(reverse("game:guesses", args=(game_id,))) if guess_created else handle_redirection(request=request)
 
 
 @login_required
@@ -231,7 +248,6 @@ def guesses_view(request, game_id):
 
     template_name = "game/guesses.html"
     hand = get_game_hand(game_id=game_id)
-    game = Game.objects.get(id=game_id)
 
     guesses_ready = not HandGuess.objects.filter(hand=hand, is_correct=None).exists()
 
@@ -241,7 +257,7 @@ def guesses_view(request, game_id):
 
     context = {
         'hand': hand,
-        'game': game,
+        'game_id': game_id,
         'guesses': guesses
     }
         
@@ -270,7 +286,7 @@ def check_guesses(request, game_id):
 
         return handle_redirection(request=request)
 
-    context = { 'guesses': guesses, 'game_id': game_id }
+    context = { 'guesses': guesses, 'game_id': game_id, 'hand': hand }
 
     return render(request=request, template_name='game/check_guesses.html', context=context)
     
