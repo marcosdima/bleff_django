@@ -38,10 +38,39 @@ if (currentTemplate === 'waiting') {
         if (data.chosen_word) window.location.reload();
     });
 
-    const button = document.querySelector('#choose');
-    if (button) button.onclick = function(e) {
+    const button_choose = document.querySelector('#choose');
+    if (button_choose) button_choose.onclick = function(e) {
         wsManager.send(JSON.stringify({
             'event_type': 'chosen_word'
         }));
     };
+} else if (currentTemplate === 'check') {
+    wsManager.registerHandler('check', (data) => {
+        if (data.new_guess) {
+            const checks = document.querySelector("#guesses_to_check")
+            const field = document.createElement('fieldset')
+
+            const content = `
+                    <label>${data.new_guess.word} means: ${ data.new_guess.content }</label>
+                    <select id="${data.new_guess.id}" name="${data.new_guess.id}">
+                        <option value="False">Ok</option>
+                        <option value="True">Remove</option>
+                    </select>
+            `;
+            
+            field.innerHTML = content
+            checks.appendChild(field)
+        }
+    })
+    const button_ready = document.querySelector('#checked');
+    if (button_ready) button_ready.onclick = function(e) {
+        wsManager.send(JSON.stringify({
+            'event_type': 'guesses_ready'
+        }));
+    };
+} else if (currentTemplate === 'guesses') {
+    wsManager.registerHandler('guesses', (data) => {
+        console.log(data)
+        if (data.guesses_ready) window.location.reload();
+    });
 }
