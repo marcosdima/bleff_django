@@ -1,15 +1,15 @@
 {% extends 'game/base.html' %}
 
 {% block content %}
-    <div data-template="guesses">
+    <div class="container" data-template="guesses">
         {% if guesses %}
-            <form action="{% url 'game:vote' game.id %}" method="post">
+            <form action="{% url 'game:vote' game_id %}" method="post">
                 {% csrf_token %}
                 <fieldset>
                     <legend><h2>Vote a guess</h2></legend>
                     {% for guess in guesses %}
                         <div>
-                            <input type="radio" name="guess" id="guess{{ forloop.counter }}" value="{{ guess.id }}">
+                            <input type="radio" name="guess" id="{{ guess.id }}" value="{{ game_id }}">
                             <label>{{ hand.word.word }} means: {{ guess.content }}</label>
                         </div>
                     {% endfor %}
