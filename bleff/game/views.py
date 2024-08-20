@@ -101,7 +101,7 @@ def waiting(request, game_id):
         {
             'users': users, 
             'conditions': conditions, 
-            'game': game
+            "game_id": game_id
         }
     )
 
@@ -176,7 +176,7 @@ def hand_view(request, game_id):
     if request.user.id == hand.leader.id and not hand.word:
         words = get_hand_choice_words(hand=hand)
 
-    return render(request, 'game/hand.html', {"hand": hand, "words_to_choose": words})
+    return render(request, 'game/hand.html', {"hand": hand, "words_to_choose": words, "game_id": game_id})
 
 
 @login_required
