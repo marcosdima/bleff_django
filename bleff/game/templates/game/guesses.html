@@ -1,27 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bleff</title>
-</head>
-<body>
-    {% if guesses %}
-        <form action="{% url 'game:vote' game.id %}" method="post">
-            {% csrf_token %}
-            <fieldset>
-                <legend><h2>Vote a guess</h2></legend>
-                {% for guess in guesses %}
-                    <div>
-                        <input type="radio" name="guess" id="guess{{ forloop.counter }}" value="{{ guess.id }}">
-                        <label>{{ hand.word.word }} means: {{ guess.content }}</label>
-                    </div>
-                {% endfor %}
-            </fieldset>
-            <input type="submit" value="Vote">
-        </form>
-    {% else %}
-        <div>Waiting for other guesses</div>
-    {% endif %}
-</body>
-</html>
+{% extends 'game/base.html' %}
+
+{% block content %}
+    <div data-template="guesses">
+        {% if guesses %}
+            <form action="{% url 'game:vote' game.id %}" method="post">
+                {% csrf_token %}
+                <fieldset>
+                    <legend><h2>Vote a guess</h2></legend>
+                    {% for guess in guesses %}
+                        <div>
+                            <input type="radio" name="guess" id="guess{{ forloop.counter }}" value="{{ guess.id }}">
+                            <label>{{ hand.word.word }} means: {{ guess.content }}</label>
+                        </div>
+                    {% endfor %}
+                </fieldset>
+                <input type="submit" value="Vote">
+            </form>
+        {% else %}
+            <div>Waiting for other guesses</div>
+        {% endif %}
+    </div>
+{% endblock %}

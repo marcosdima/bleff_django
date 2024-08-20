@@ -1,34 +1,23 @@
-{% load static %}
+{% extends 'game/base.html' %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bleff</title>
-    <script type="text/javascript">
-        const gameId= '{{ game.id }}'
-        const username = '{{ user.username }}'
-    </script>
-    <script src="{% static 'game/js/waiting_socket.js' %}" type="module"></script>
-</head>
-<body>
-    <ul id="usernames">
-        {% for user in users %}
-            <li id="{{user}}"><h1>{{user}}</h1></li>
+{% block content %}
+    <div class="container" data-template="waiting">
+        <ul id="usernames">
+            {% for user in users %}
+                <li id="{{user}}"><h1>{{user}}</h1></li>
+            {% endfor %}
+        </ul>
+
+        {% if not game.creator or game.creator.id == user.id %}
+            <form action="{% url 'game:start_game' game_id %}" method="post">
+                {% csrf_token %}
+                <input id="start_game" type="submit" value="Start Game">
+            </form>
+        {% endif %}
+
+        <div>Players Count: {{object_list|length}}</div>
+        {% for condition in conditions %}
+            <div>{{condition.tag}}: {{condition.value}}</div>
         {% endfor %}
-    </ul>
-
-    {% if not game.creator or game.creator.id == user.id %}
-        <form action="{% url 'game:start_game' game.id %}" method="post">
-            {% csrf_token %}
-            <input type="submit" value="Start Game">
-        </form>
-    {% endif %}
-
-    <div>Players Count: {{object_list|length}}</div>
-    {% for condition in conditions %}
-        <div>{{condition.tag}}: {{condition.value}}</div>
-    {% endfor %}
-</body>
-</html>
+    </div>
+{% endblock %}
