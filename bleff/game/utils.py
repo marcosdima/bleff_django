@@ -99,3 +99,8 @@ def already_vote(user: User, game_id: int) -> bool:
 def last_hand(game_id: int) -> Hand | None:
     hands = Hand.objects.filter(game_id=game_id)
     return hands.latest('created_at') if hands.exists() else None
+
+
+def guesses_ready(game_id: int) -> bool:
+    hand = get_game_hand(game_id=game_id)
+    return not HandGuess.objects.filter(hand=hand, is_correct=None).exists()
