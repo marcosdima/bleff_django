@@ -8,6 +8,7 @@ const currentTemplate = container.getAttribute('data-template');
 
 if (currentTemplate === 'waiting') {
     wsManager.registerHandler('waiting', (data) => {
+        // If data.url has an url, then the game started...
         if (data.url) return window.location.href = data.url;
 
         const newUsername = data.player_username;
@@ -33,5 +34,14 @@ if (currentTemplate === 'waiting') {
         }));
     };
 } else if (currentTemplate === 'hand') {
-    console.log('hand')
+    wsManager.registerHandler('hand', (data) => {
+        if (data.chosen_word) window.location.reload();
+    });
+
+    const button = document.querySelector('#choose');
+    if (button) button.onclick = function(e) {
+        wsManager.send(JSON.stringify({
+            'event_type': 'chosen_word'
+        }));
+    };
 }
