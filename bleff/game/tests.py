@@ -964,6 +964,7 @@ class UtilsFunctionsTest(TestCase):
         '''
             This function should return the number of votes remaining.
         '''
+        Play.objects.create(game=self.game, user=self.secondaryUser)
         content = 'aaaaaaaaaaaaaaaaaaaaaaaaa'
         hand = Hand.objects.create(game=self.game)
         Guess.objects.create(content=content, writer=self.user, hand=hand)
@@ -975,6 +976,7 @@ class UtilsFunctionsTest(TestCase):
         '''
             This function should return the number of votes remaining.
         '''
+        Play.objects.create(game=self.game, user=self.secondaryUser)
         content = 'aaaaaaaaaaaaaaaaaaaaaaaaa'
         hand = Hand.objects.create(game=self.game, word=self.word)
         guess = Guess.objects.create(content=content, writer=self.user, hand=hand)

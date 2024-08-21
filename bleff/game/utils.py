@@ -85,11 +85,10 @@ def there_are_guesses_to_check(game_id: int) -> bool:
 
 
 def votes_remaining(game_id: int) -> int:
-    # -1 beacuse exists a HandGuess made by default.
     hand_guesses = [hg.id for hg in HandGuess.objects.filter(hand=get_game_hand(game_id=game_id), is_correct=False)]
-    num_of_votants = len(hand_guesses) - 1
+    users_count = Play.objects.filter(game__id=game_id).count() - 1
 
-    return Vote.objects.filter(to_id__in=hand_guesses).count() - num_of_votants
+    return users_count - Vote.objects.filter(to_id__in=hand_guesses).count()
 
 
 def already_vote(user: User, game_id: int) -> bool:
