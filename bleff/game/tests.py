@@ -1555,13 +1555,34 @@ class VoteViewTest(TestCase):
         self.root_guess = Guess.objects.create(writer=self.user, content='A content sdasdasdasdasda', hand=self.hand)
         self.secondary_guess = Guess.objects.create(writer=self.secondaryUser, content='A content sdasdasdasdasda 2', hand=self.hand)
 
+        # To vote, first should be checked.
+        data = {
+            self.root_guess.id: False,
+            self.secondary_guess.id: False
+        }
+        login_root_user(self)
+        self.client.post(reverse('game:check_guesses', args=[self.game.id]), data=data)
+
     
     def test_vote_your_guess(self):
         '''
             Should let you vote.
         '''
-        login_root_user(self)
-        response = self.client.post(path=reverse('game:vote', args=[self.game.id]))
+        login_secondary_user(self)
+        response = self.client.post(path=reverse('game:vote', args=[self.game.id]), data={'guess': self.secondary_guess.id})
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('game:hand_detail', args=[self.hand.id]))
+        self.assertEqual(Vote.objects.all().count(), 1)
+
+    
+    def test_vote_your_guess_but_you_are_the_leader(self):
+        '''
+            Shouldn't let you vote.
+        '''
+        login_root_user(self)
+        response = self.client.post(path=reverse('game:vote', args=[self.game.id]), data={'guess': self.secondary_guess.id})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('game:hand_detail', args=[self.hand.id]))
+        self.assertEqual(Vote.objects.all().count(), 0)
