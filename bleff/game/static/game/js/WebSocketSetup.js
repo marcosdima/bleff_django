@@ -70,7 +70,20 @@ if (currentTemplate === 'waiting') {
     };
 } else if (currentTemplate === 'guesses') {
     wsManager.registerHandler('guesses', (data) => {
-        console.log(data)
         if (data.guesses_ready) window.location.reload();
+    });
+} else if (currentTemplate === 'hand_detail') {
+    wsManager.registerHandler('hand_detail', (data) => {
+        if (data.new_vote) {
+            const votes = document.querySelector("#votes");
+            const new_vote = document.createElement('div');
+
+            const content = `
+                    <label>~ Vote '${data.new_vote.content}' from ${data.new_vote.votant}</label>
+            `;
+            
+            new_vote.innerHTML = content
+            votes.appendChild(new_vote)
+        }
     });
 }
