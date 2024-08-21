@@ -13,10 +13,6 @@ class WebSocketManager {
             this.socket = new WebSocket(`ws://${window.location.host}/ws/game/${gameId}/`);
 
             this.socket.onopen = () => {
-                if (USERNAME) this.socket.send(JSON.stringify({
-                    'player_username': USERNAME,
-                    'event_type': 'player_join'
-                }));
                 console.log('WebSocket connection established');
             };
 

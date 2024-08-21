@@ -75,6 +75,14 @@ def update_or_none(model: Model):
         return None
 
 
+def ws_event(data, game_id):
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f'game_{game_id}',
+        data
+    )
+
+
 class IndexView(generic.ListView):
     model = Game
     template_name = "game/index.html"
@@ -93,9 +101,14 @@ class IndexView(generic.ListView):
 @login_required
 @require_GET
 def waiting(request, game_id):
-    game = Game.objects.get(id=game_id)
+    game = get_object_or_404(Game, id=game_id)
     conditions = Condition.objects.filter(game=game)
     users = [p.user.username for p in Play.objects.filter(game=game_id)]
+
+    ws_event({
+        'player_username': request.user.username,
+        'type': 'player_join'
+    }, game_id)    
 
     return render(
         request, 
@@ -167,14 +180,7 @@ def start_game(request, game_id):
     start_hand = create_or_none(model=Hand, fields={'game': game}) if not game.creator or request.user == game.creator else None
 
     if start_hand:
-        channel_layer = get_channel_layer()
-        
-        async_to_sync(channel_layer.group_send)(
-            f'game_{game_id}',
-            {
-                'type': 'start_game'
-            }
-        )
+        ws_event({'type': 'start_game'}, game_id)
 
     return HttpResponseRedirect(reverse("game:hand", args=(game_id,))) if start_hand else handle_redirection(request=request)
 
@@ -213,6 +219,8 @@ def choose_word(request, game_id):
         print(e)
         return handle_redirection(request=request)
 
+    ws_event({'type': 'chosen_word'}, game_id)
+    
     return HttpResponseRedirect(reverse("game:hand", args=(game_id,)))
 
 
@@ -231,18 +239,14 @@ def make_guess(request, game_id):
     
 
     if (guess_created):
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f'game_{game_id}',
-            {
-                'type': 'new_guess',
-                'new_guess': {
-                    'content': guess,
-                    'id': guess_created.id,
-                    'word': hand.word.word
-                }
+        ws_event({
+            'type': 'new_guess',
+            'new_guess': {
+                'content': guess,
+                'id': guess_created.id,
+                'word': hand.word.word
             }
-        )
+        }, game_id)
 
     return HttpResponseRedirect(reverse("game:guesses", args=(game_id,))) if guess_created else handle_redirection(request=request)
 
@@ -295,6 +299,8 @@ def check_guesses(request, game_id):
                 hand_guess.is_correct = True if set_as == 'True' else False
                 update_or_none(hand_guess)
 
+        ws_event({'type': 'guesses_ready'}, game_id)
+
         return handle_redirection(request=request)
 
     context = { 'guesses': guesses, 'game_id': game_id, 'hand': hand }
@@ -323,23 +329,15 @@ def vote(request, game_id):
     if vote and hand:
         channel_layer = get_channel_layer()
         if not hand.finished_at:
-            async_to_sync(channel_layer.group_send)(
-                f'game_{game_id}',
-                {
-                    'type': 'new_vote',
-                    'new_vote': {
-                        'content': guess.content,
-                        'votant': request.user.username
-                    }
+            ws_event({
+                'type': 'new_vote',
+                'new_vote': {
+                    'content': guess.content,
+                    'votant': request.user.username
                 }
-            )
+            }, game_id)
         else:
-            async_to_sync(channel_layer.group_send)(
-                f'game_{game_id}',
-                {
-                    'type': 'hand_finished',
-                }
-            )
+            ws_event({'type': 'hand_finished'}, game_id)
 
     return handle_redirection(request=request)
 

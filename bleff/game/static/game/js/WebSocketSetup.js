@@ -31,13 +31,6 @@ if (currentTemplate === 'waiting') {
     wsManager.registerHandler('hand', (data) => {
         if (data.chosen_word) window.location.reload();
     });
-
-    const button_choose = document.querySelector('#choose');
-    if (button_choose) button_choose.onclick = function(e) {
-        wsManager.send(JSON.stringify({
-            'event_type': 'chosen_word'
-        }));
-    };
 } else if (currentTemplate === 'check') {
     wsManager.registerHandler('check', (data) => {
         if (data.new_guess) {
@@ -56,12 +49,6 @@ if (currentTemplate === 'waiting') {
             checks.appendChild(field)
         }
     })
-    const button_ready = document.querySelector('#checked');
-    if (button_ready) button_ready.onclick = function(e) {
-        wsManager.send(JSON.stringify({
-            'event_type': 'guesses_ready'
-        }));
-    };
 } else if (currentTemplate === 'guesses') {
     wsManager.registerHandler('guesses', (data) => {
         if (data.guesses_ready) window.location.reload();
