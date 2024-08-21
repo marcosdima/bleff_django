@@ -100,6 +100,7 @@ class IndexView(generic.ListView):
 
 @login_required
 @require_GET
+@play_required(handle_redirection)
 def waiting(request, game_id):
     game = get_object_or_404(Game, id=game_id)
     conditions = Condition.objects.filter(game=game)
