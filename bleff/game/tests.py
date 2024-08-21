@@ -1169,7 +1169,7 @@ class WaitingViewTest(TestCase):
 
         response = self.client.get(reverse('game:waiting', args=[self.game.id]))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerySetEqual(response.context["object_list"], [self.user])
+        self.assertQuerySetEqual(response.context["users"], [self.user.username])
 
 
     def test_waiting_view_with_two_players(self):
@@ -1181,7 +1181,7 @@ class WaitingViewTest(TestCase):
 
         response = self.client.get(reverse('game:waiting', args=[self.game.id]))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerySetEqual(response.context["object_list"], [self.user, self.secondaryUser])
+        self.assertQuerySetEqual(response.context["users"], [self.user.username, self.secondaryUser.username])
 
     
     def test_waiting_view_with_no_login(self):
