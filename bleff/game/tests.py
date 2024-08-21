@@ -669,7 +669,8 @@ class VoteModelTest(TestCase):
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
         self.word, self.meaning = create_word_meaning('House', language=self.lang, content='An explanation of what "HOUSE" is in English.', word_translation='HoUsE')
-        self.hand = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
+        Play.objects.create(user=self.secondaryUser, game=self.game)
+        self.hand = Hand.objects.create(game=self.game, leader=self.secondaryUser, word=self.word)
         self.content = 'A guess of a Hand, LOL.'
         self.guess = Guess.objects.create(hand=self.hand, content=self.content, writer=self.user)
         self.secondary_guess = Guess.objects.create(hand=self.hand, content=self.content, writer=self.secondaryUser)
@@ -964,6 +965,7 @@ class UtilsFunctionsTest(TestCase):
         '''
             This function should return the number of votes remaining.
         '''
+        Play.objects.create(game=self.game, user=self.secondaryUser)
         content = 'aaaaaaaaaaaaaaaaaaaaaaaaa'
         hand = Hand.objects.create(game=self.game)
         Guess.objects.create(content=content, writer=self.user, hand=hand)
@@ -975,6 +977,7 @@ class UtilsFunctionsTest(TestCase):
         '''
             This function should return the number of votes remaining.
         '''
+        Play.objects.create(game=self.game, user=self.secondaryUser)
         content = 'aaaaaaaaaaaaaaaaaaaaaaaaa'
         hand = Hand.objects.create(game=self.game, word=self.word)
         guess = Guess.objects.create(content=content, writer=self.user, hand=hand)
@@ -1141,14 +1144,15 @@ class CreateGameViewTest(TestCase):
 
     def test_create_a_game_but_conditions_contradiction(self):
         '''
-            If MIN_PLAYERS has a value grater than MAX_PLAYERS, then should raise a validation error.
+            If MIN_PLAYERS has a value grater than MAX_PLAYERS, then should set both as equal.
         '''
         login_root_user(self)
-        data = {'language': self.lang.tag, self.max.tag: self.max.min, self.min.tag: 9, }
+        data = {'language': self.lang.tag, self.max.tag: self.max.min, self.min.tag: 8, }
         response = self.client.post(path=reverse('game:create'), data=data)
 
-        self.assertEqual(Game.objects.all().count(), 0)
-        self.assertEqual(response.url, reverse('game:index'))
+        game = Game.objects.all()[0]
+        self.assertEqual(response.url, reverse('game:waiting', args=[game.id]))
+        self.assertEqual(Condition.objects.all()[0].value, Condition.objects.all()[1].value)
 
 
 class WaitingViewTest(TestCase):
@@ -1167,7 +1171,7 @@ class WaitingViewTest(TestCase):
 
         response = self.client.get(reverse('game:waiting', args=[self.game.id]))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerySetEqual(response.context["object_list"], [self.user])
+        self.assertQuerySetEqual(response.context["users"], [self.user.username])
 
 
     def test_waiting_view_with_two_players(self):
@@ -1179,7 +1183,7 @@ class WaitingViewTest(TestCase):
 
         response = self.client.get(reverse('game:waiting', args=[self.game.id]))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerySetEqual(response.context["object_list"], [self.user, self.secondaryUser])
+        self.assertQuerySetEqual(response.context["users"], [self.user.username, self.secondaryUser.username])
 
     
     def test_waiting_view_with_no_login(self):
@@ -1553,13 +1557,34 @@ class VoteViewTest(TestCase):
         self.root_guess = Guess.objects.create(writer=self.user, content='A content sdasdasdasdasda', hand=self.hand)
         self.secondary_guess = Guess.objects.create(writer=self.secondaryUser, content='A content sdasdasdasdasda 2', hand=self.hand)
 
+        # To vote, first should be checked.
+        data = {
+            self.root_guess.id: False,
+            self.secondary_guess.id: False
+        }
+        login_root_user(self)
+        self.client.post(reverse('game:check_guesses', args=[self.game.id]), data=data)
+
     
     def test_vote_your_guess(self):
         '''
             Should let you vote.
         '''
-        login_root_user(self)
-        response = self.client.post(path=reverse('game:vote', args=[self.game.id]))
+        login_secondary_user(self)
+        response = self.client.post(path=reverse('game:vote', args=[self.game.id]), data={'guess': self.secondary_guess.id})
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('game:hand_detail', args=[self.hand.id]))
+        self.assertEqual(Vote.objects.all().count(), 1)
+
+    
+    def test_vote_your_guess_but_you_are_the_leader(self):
+        '''
+            Shouldn't let you vote.
+        '''
+        login_root_user(self)
+        response = self.client.post(path=reverse('game:vote', args=[self.game.id]), data={'guess': self.secondary_guess.id})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('game:hand_detail', args=[self.hand.id]))
+        self.assertEqual(Vote.objects.all().count(), 0)

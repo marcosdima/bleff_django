@@ -1,27 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bleff</title>
-</head>
-<body>
-    
+{% extends 'game/base.html' %}
 
-    {% for user in object_list %}
-        <h1>{{forloop.counter}}. {{user.username}}</h1>
-    {% endfor %}
+{% block content %}
+    <div class="container" data-template="waiting">
+        <ul id="usernames">
+            {% for user in users %}
+                <li id="{{user}}"><h1>{{user}}</h1></li>
+            {% endfor %}
+        </ul>
 
-    {% if not game.creator or game.creator.id == user.id %}
-        <form action="{% url 'game:start_game' game.id %}" method="post">
-            {% csrf_token %}
-            <input type="submit" value="Start Game">
-        </form>
-    {% endif %}
+        {% if not game.creator or game.creator.id == user.id %}
+            <form action="{% url 'game:start_game' game_id %}" method="post">
+                {% csrf_token %}
+                <input id="start_game" type="submit" value="Start Game">
+            </form>
+        {% endif %}
 
-    <div>Players Count: {{object_list|length}}</div>
-    {% for condition in conditions %}
-        <div>{{condition.tag}}: {{condition.value}}</div>
-    {% endfor %}
-</body>
-</html>
+        <div>Players Count: {{object_list|length}}</div>
+        {% for condition in conditions %}
+            <div>{{condition.tag}}: {{condition.value}}</div>
+        {% endfor %}
+    </div>
+{% endblock %}

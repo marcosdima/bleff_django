@@ -1,31 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bleff</title>
-</head>
-<body>
-    <h1>Hand: {{ hand.word }}</h1>
-    {% for vote in votes %}
-    <div>
-        <label>~ Vote {{ vote.to.guess.content }} from {{ vote.user }}</label>
-    </div>
-    {% endfor %}
-    <hr>
-    {% if hand.finished_at %}
-        {% for guess in guesses %}
-        <div>
-            <label>{{ hand.word.word }} guess: '{{ guess.content }}' by {{ guess.writer }}. Votes: {{ guess.votes }}</label>
+{% extends 'game/base.html' %}
+
+{% block content %}
+    <div class="container" data-template="hand_detail">
+        <h1>Hand: {{ hand.word }} {{gameId}}</h1>
+        <div id="votes">
+            {% for vote in votes %}
+                <div>
+                    <label>~ Vote '{{ vote.to.guess.content }}' from {{ vote.user }}</label>
+                </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-    {% endif %}
-    <hr>
-    {% if not game.creator or game.creator.id == user.id %}
-        <form action="{% url 'game:start_game' hand.game.id %}" method="post">
-            {% csrf_token %}
-            <input type="submit" value="Next Hand">
-        </form>
-    {% endif %}
-</body>
-</html>
+        <hr>
+        {% if hand.finished_at %}
+            <div>
+                {% for guess in guesses %}
+                    <div>
+                        <label>{{ hand.word.word }} guess: '{{ guess.content }}' by {{ guess.writer }}. Votes: {{ guess.votes }}</label>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <hr>
+        {% if not hand.game.creator or hand.game.creator.id == user.id %}
+            <form action="{% url 'game:start_game' hand.game.id %}" method="post">
+                {% csrf_token %}
+                <input type="submit" value="Next Hand">
+            </form>
+        {% endif %}
+    </div>
+{% endblock %}

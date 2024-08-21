@@ -1,35 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bleff</title>
-</head>
-<body>
-    {% if words_to_choose %}
-        <form action="{% url 'game:choose' hand.game.id %}" method="post">
-            {% csrf_token %}
-            <fieldset>
-                {% for choice in words_to_choose %}
-                    <div>
-                        <input type="radio" name="choice" id="choice{{ forloop.counter }}" value="{{ choice }}">
-                        <label>{{choice}}</label>
-                    </div>
-                {% endfor %}
-            </fieldset>
-            <input type="submit" value="Choose">
-        </form>
-    {% elif not hand.word %}
-        <div>Waiting {{hand.leader}} to choose a word</div>
-    {% else %}
-        <form action="{% url 'game:make_guess' hand.game.id %}" method="post">
-            {% csrf_token %}
-            <fieldset>
-                <legend><h2>Write your guess for '{{hand.word}}':</h2></legend>
-                <textarea name="guess" id="guess" rows="10" cols="100"></textarea>
-            </fieldset>
-            <input type="submit" value="Submit">
-        </form>
-    {% endif %}
-</body>
-</html>
+{% extends 'game/base.html' %}
+
+{% block content %}
+    <div class="container" data-template="hand">
+        {% if words_to_choose %}
+            <form action="{% url 'game:choose' hand.game.id %}" method="post">
+                {% csrf_token %}
+                <fieldset>
+                    {% for choice in words_to_choose %}
+                        <div>
+                            <input type="radio" name="choice" id="choice{{ forloop.counter }}" value="{{ choice }}">
+                            <label>{{choice}}</label>
+                        </div>
+                    {% endfor %}
+                </fieldset>
+                <input id="choose" type="submit" value="Choose">
+            </form>
+        {% elif not hand.word %}
+            <div>Waiting {{hand.leader}} to choose a word</div>
+        {% else %}
+            <form action="{% url 'game:make_guess' hand.game.id %}" method="post">
+                {% csrf_token %}
+                <fieldset>
+                    <legend><h2>Write your guess for '{{hand.word}}':</h2></legend>
+                    <textarea name="guess" id="guess" rows="10" cols="100"></textarea>
+                </fieldset>
+                <input id="send_guess" type="submit" value="Submit">
+            </form>
+        {% endif %}
+    </div>
+{% endblock %}

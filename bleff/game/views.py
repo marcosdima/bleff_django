@@ -7,6 +7,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.http import require_POST, require_GET
 from django.db.models import Model
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 from .models import Game, HandGuess, Language, Play, Hand, Vote, Word, Guess, ConditionTag, Condition
 from .utils import plays_game, get_game_hand, get_hand_choice_words, remove_fields, conditions_are_met, is_leader, votes_remaining, already_vote, last_hand
@@ -88,34 +90,24 @@ class IndexView(generic.ListView):
         return context
 
 
-class WaitingView(LoginRequiredMixin, generic.ListView):
-    model = User
-    template_name = "game/waiting.html"
+@login_required
+@require_GET
+def waiting(request, game_id):
+    game = Game.objects.get(id=game_id)
+    conditions = Condition.objects.filter(game=game)
+    users = [p.user.username for p in Play.objects.filter(game=game_id)]
 
+    return render(
+        request, 
+        'game/waiting.html', 
+        {
+            'users': users, 
+            'conditions': conditions, 
+            "game_id": game_id,
+            'game': game
+        }
+    )
 
-    def dispatch(self, request, *args, **kwargs): 
-        game_id = kwargs.get('game_id', None)
-
-        # TODO: fix error if game does not exists.
-        if Hand.objects.filter(game__id=game_id).exists():
-            return handle_redirection(request=request)
-
-        return super().dispatch(request, *args, **kwargs)
-
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)    
-        id = self.kwargs.get('game_id') 
-        game = Game.objects.get(id=id)
-        context['game'] = game
-        context['conditions'] = Condition.objects.filter(game=game)
-        return context
-
-
-    def get_queryset(self): 
-        id = self.kwargs.get('game_id')
-        return [p.user for p in Play.objects.filter(game=id)]
-    
 
 @login_required
 @require_POST
@@ -174,6 +166,16 @@ def start_game(request, game_id):
     # Creates hand if there is no game-hand and the player is the creator
     start_hand = create_or_none(model=Hand, fields={'game': game}) if not game.creator or request.user == game.creator else None
 
+    if start_hand:
+        channel_layer = get_channel_layer()
+        
+        async_to_sync(channel_layer.group_send)(
+            f'game_{game_id}',
+            {
+                'type': 'start_game'
+            }
+        )
+
     return HttpResponseRedirect(reverse("game:hand", args=(game_id,))) if start_hand else handle_redirection(request=request)
 
 
@@ -187,7 +189,7 @@ def hand_view(request, game_id):
     if request.user.id == hand.leader.id and not hand.word:
         words = get_hand_choice_words(hand=hand)
 
-    return render(request, 'game/hand.html', {"hand": hand, "words_to_choose": words})
+    return render(request, 'game/hand.html', {"hand": hand, "words_to_choose": words, "game_id": game_id, "game": hand.game })
 
 
 @login_required
@@ -222,12 +224,27 @@ def make_guess(request, game_id):
     guess = request.POST['guess']
     hand = get_game_hand(game_id=game_id)
 
-    guess = create_or_none(model=Guess, fields={'hand': hand, 'writer':request.user, 'content': guess})
+    guess_created = create_or_none(model=Guess, fields={'hand': hand, 'writer':request.user, 'content': guess})
 
-    if guess and request.user.id == hand.leader.id:
+    if guess_created and request.user.id == hand.leader.id:
         return HttpResponseRedirect(reverse("game:check_guesses", args=(game_id,)))
+    
 
-    return HttpResponseRedirect(reverse("game:guesses", args=(game_id,))) if guess else handle_redirection(request=request)
+    if (guess_created):
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'game_{game_id}',
+            {
+                'type': 'new_guess',
+                'new_guess': {
+                    'content': guess,
+                    'id': guess_created.id,
+                    'word': hand.word.word
+                }
+            }
+        )
+
+    return HttpResponseRedirect(reverse("game:guesses", args=(game_id,))) if guess_created else handle_redirection(request=request)
 
 
 @login_required
@@ -242,7 +259,6 @@ def guesses_view(request, game_id):
 
     template_name = "game/guesses.html"
     hand = get_game_hand(game_id=game_id)
-    game = Game.objects.get(id=game_id)
 
     guesses_ready = not HandGuess.objects.filter(hand=hand, is_correct=None).exists()
 
@@ -252,7 +268,7 @@ def guesses_view(request, game_id):
 
     context = {
         'hand': hand,
-        'game': game,
+        'game_id': game_id,
         'guesses': guesses
     }
         
@@ -281,7 +297,7 @@ def check_guesses(request, game_id):
 
         return handle_redirection(request=request)
 
-    context = { 'guesses': guesses, 'game_id': game_id }
+    context = { 'guesses': guesses, 'game_id': game_id, 'hand': hand }
 
     return render(request=request, template_name='game/check_guesses.html', context=context)
     
@@ -291,15 +307,39 @@ def check_guesses(request, game_id):
 @play_required(handle_redirection)
 @conditions_met(handle_redirection)
 def vote(request, game_id):
-    guess = get_object_or_404(Guess, writer=request.user, hand=get_game_hand(game_id=game_id))
+    guess_id = request.POST['guess']
+    guess = get_object_or_404(Guess, id=int(guess_id))
     guess_hand = get_object_or_404(HandGuess, guess=guess)
 
-    create_or_none(model=Vote, fields={'to': guess_hand, 'user':request.user})
+    vote = create_or_none(model=Vote, fields={'to': guess_hand, 'user':request.user})
+    hand = get_game_hand(game_id=game_id)
 
-    if not votes_remaining(game_id=game_id):
-        hand = get_game_hand(game_id=game_id)
-        if hand: 
-            hand.end()
+
+    # TODO: and hand... wierd.
+    if votes_remaining(game_id=game_id) == 0 and hand:
+        hand.end()
+    
+    # WebSocket connection...
+    if vote and hand:
+        channel_layer = get_channel_layer()
+        if not hand.finished_at:
+            async_to_sync(channel_layer.group_send)(
+                f'game_{game_id}',
+                {
+                    'type': 'new_vote',
+                    'new_vote': {
+                        'content': guess.content,
+                        'votant': request.user.username
+                    }
+                }
+            )
+        else:
+            async_to_sync(channel_layer.group_send)(
+                f'game_{game_id}',
+                {
+                    'type': 'hand_finished',
+                }
+            )
 
     return handle_redirection(request=request)
 
@@ -312,7 +352,7 @@ def hand_detail(request, hand_id):
     votes = Vote.objects.filter(to_id__in=hand_guesses)
 
     if not hand.finished_at:
-        return render(request=request, template_name='game/hand_detail.html', context={'hand': hand, 'votes': votes})
+        return render(request=request, template_name='game/hand_detail.html', context={'hand': hand, 'votes': votes, 'game_id': hand.game.id})
 
     guesses = [hg.guess for hg in HandGuess.objects.filter(hand=hand, guess__writer__isnull=False)]
 
@@ -323,6 +363,7 @@ def hand_detail(request, hand_id):
         'hand': hand,
         'votes': Vote.objects.filter(to_id__in=hand_guesses),
         'guesses': guesses,
+        'game_id': hand.game.id
     }
 
     return render(request=request, template_name='game/hand_detail.html', context=context)
