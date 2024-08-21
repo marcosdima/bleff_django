@@ -1143,14 +1143,15 @@ class CreateGameViewTest(TestCase):
 
     def test_create_a_game_but_conditions_contradiction(self):
         '''
-            If MIN_PLAYERS has a value grater than MAX_PLAYERS, then should raise a validation error.
+            If MIN_PLAYERS has a value grater than MAX_PLAYERS, then should set both as equal.
         '''
         login_root_user(self)
-        data = {'language': self.lang.tag, self.max.tag: self.max.min, self.min.tag: 9, }
+        data = {'language': self.lang.tag, self.max.tag: self.max.min, self.min.tag: 8, }
         response = self.client.post(path=reverse('game:create'), data=data)
 
-        self.assertEqual(Game.objects.all().count(), 0)
-        self.assertEqual(response.url, reverse('game:index'))
+        game = Game.objects.all()[0]
+        self.assertEqual(response.url, reverse('game:waiting', args=[game.id]))
+        self.assertEqual(Condition.objects.all()[0].value, Condition.objects.all()[1].value)
 
 
 class WaitingViewTest(TestCase):
