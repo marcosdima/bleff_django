@@ -77,7 +77,7 @@ class GameConsumer(WebsocketConsumer):
 
     def start_game(self, event):
         game_id = int(self.game_id)
-        self.send(text_data=json.dumps({"url": reverse('game:hand', args=(game_id,))}))
+        self.send(text_data=json.dumps({"start_game": True, "url": reverse('game:hand', args=(game_id,))}))
 
 
     def player_join(self, event):

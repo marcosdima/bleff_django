@@ -6,6 +6,7 @@ wsManager.connect(gameId);
 const [container] = document.getElementsByClassName('container');
 const currentTemplate = container.getAttribute('data-template');
 
+// TODO: This works, but it's kinda gross. Rethink!
 if (currentTemplate === 'waiting') {
     wsManager.registerHandler('waiting', (data) => {
         // If data.url has an url, then the game started...
@@ -26,13 +27,6 @@ if (currentTemplate === 'waiting') {
         newItem.appendChild(h1Item);
         usernames.appendChild(newItem);
     });
-
-    const button = document.querySelector('#start_game');
-    if (button) button.onclick = function(e) {
-        wsManager.send(JSON.stringify({
-            'event_type': 'start_game'
-        }));
-    };
 } else if (currentTemplate === 'hand') {
     wsManager.registerHandler('hand', (data) => {
         if (data.chosen_word) window.location.reload();
@@ -86,6 +80,8 @@ if (currentTemplate === 'waiting') {
             votes.appendChild(new_vote)
         } else if (data.hand_finished) {
             window.location.reload();
+        } else if (data.url) {
+            window.location.href = data.url;
         }
     });
 }

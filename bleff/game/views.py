@@ -166,6 +166,16 @@ def start_game(request, game_id):
     # Creates hand if there is no game-hand and the player is the creator
     start_hand = create_or_none(model=Hand, fields={'game': game}) if not game.creator or request.user == game.creator else None
 
+    if start_hand:
+        channel_layer = get_channel_layer()
+        
+        async_to_sync(channel_layer.group_send)(
+            f'game_{game_id}',
+            {
+                'type': 'start_game'
+            }
+        )
+
     return HttpResponseRedirect(reverse("game:hand", args=(game_id,))) if start_hand else handle_redirection(request=request)
 
 
