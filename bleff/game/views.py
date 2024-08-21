@@ -103,7 +103,8 @@ def waiting(request, game_id):
         {
             'users': users, 
             'conditions': conditions, 
-            "game_id": game_id
+            "game_id": game_id,
+            'game': game
         }
     )
 
@@ -178,7 +179,7 @@ def hand_view(request, game_id):
     if request.user.id == hand.leader.id and not hand.word:
         words = get_hand_choice_words(hand=hand)
 
-    return render(request, 'game/hand.html', {"hand": hand, "words_to_choose": words, "game_id": game_id})
+    return render(request, 'game/hand.html', {"hand": hand, "words_to_choose": words, "game_id": game_id, "game": hand.game })
 
 
 @login_required
@@ -296,15 +297,30 @@ def check_guesses(request, game_id):
 @play_required(handle_redirection)
 @conditions_met(handle_redirection)
 def vote(request, game_id):
-    guess = get_object_or_404(Guess, writer=request.user, hand=get_game_hand(game_id=game_id))
+    guess_id = request.POST['guess']
+    guess = get_object_or_404(Guess, id=int(guess_id))
     guess_hand = get_object_or_404(HandGuess, guess=guess)
 
-    create_or_none(model=Vote, fields={'to': guess_hand, 'user':request.user})
+    vote = create_or_none(model=Vote, fields={'to': guess_hand, 'user':request.user})
+    hand = get_game_hand(game_id=game_id)
 
-    if not votes_remaining(game_id=game_id):
-        hand = get_game_hand(game_id=game_id)
-        if hand: 
-            hand.end()
+
+    # TODO: and hand... wierd.
+    if not votes_remaining(game_id=game_id) and hand:
+        hand.end()
+
+    if vote and hand:
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'game_{game_id}',
+            {
+                'type': 'new_vote',
+                'new_vote': {
+                    'content': guess.content,
+                    'votant': request.user.username
+                }
+            }
+        )
 
     return handle_redirection(request=request)
 
@@ -317,7 +333,7 @@ def hand_detail(request, hand_id):
     votes = Vote.objects.filter(to_id__in=hand_guesses)
 
     if not hand.finished_at:
-        return render(request=request, template_name='game/hand_detail.html', context={'hand': hand, 'votes': votes})
+        return render(request=request, template_name='game/hand_detail.html', context={'hand': hand, 'votes': votes, 'game_id': hand.game.id})
 
     guesses = [hg.guess for hg in HandGuess.objects.filter(hand=hand, guess__writer__isnull=False)]
 
@@ -328,6 +344,7 @@ def hand_detail(request, hand_id):
         'hand': hand,
         'votes': Vote.objects.filter(to_id__in=hand_guesses),
         'guesses': guesses,
+        'game_id': hand.game.id
     }
 
     return render(request=request, template_name='game/hand_detail.html', context=context)
