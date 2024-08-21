@@ -669,7 +669,8 @@ class VoteModelTest(TestCase):
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
         self.word, self.meaning = create_word_meaning('House', language=self.lang, content='An explanation of what "HOUSE" is in English.', word_translation='HoUsE')
-        self.hand = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
+        Play.objects.create(user=self.secondaryUser, game=self.game)
+        self.hand = Hand.objects.create(game=self.game, leader=self.secondaryUser, word=self.word)
         self.content = 'A guess of a Hand, LOL.'
         self.guess = Guess.objects.create(hand=self.hand, content=self.content, writer=self.user)
         self.secondary_guess = Guess.objects.create(hand=self.hand, content=self.content, writer=self.secondaryUser)
