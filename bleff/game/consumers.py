@@ -99,5 +99,10 @@ class GameConsumer(WebsocketConsumer):
             new_vote = event['new_vote']
             self.send(text_data=json.dumps({"new_vote": new_vote}))
 
+
     def guesses_ready(self, event):
         self.send(text_data=json.dumps({"guesses_ready": True}))
+
+
+    def hand_finished(self, event):
+        self.send(text_data=json.dumps({"hand_finished": True}))

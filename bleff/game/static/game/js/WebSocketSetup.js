@@ -84,6 +84,8 @@ if (currentTemplate === 'waiting') {
             
             new_vote.innerHTML = content
             votes.appendChild(new_vote)
+        } else if (data.hand_finished) {
+            window.location.reload();
         }
     });
 }

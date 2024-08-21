@@ -14,9 +14,9 @@
         {% if hand.finished_at %}
             <div>
                 {% for guess in guesses %}
-                <div>
-                    <label>{{ hand.word.word }} guess: '{{ guess.content }}' by {{ guess.writer }}. Votes: {{ guess.votes }}</label>
-                </div>
+                    <div>
+                        <label>{{ hand.word.word }} guess: '{{ guess.content }}' by {{ guess.writer }}. Votes: {{ guess.votes }}</label>
+                    </div>
                 {% endfor %}
             </div>
         {% endif %}

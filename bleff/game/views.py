@@ -306,21 +306,30 @@ def vote(request, game_id):
 
 
     # TODO: and hand... wierd.
-    if not votes_remaining(game_id=game_id) and hand:
+    if votes_remaining(game_id=game_id) == 0 and hand:
         hand.end()
-
+    
+    # WebSocket connection...
     if vote and hand:
         channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f'game_{game_id}',
-            {
-                'type': 'new_vote',
-                'new_vote': {
-                    'content': guess.content,
-                    'votant': request.user.username
+        if not hand.finished_at:
+            async_to_sync(channel_layer.group_send)(
+                f'game_{game_id}',
+                {
+                    'type': 'new_vote',
+                    'new_vote': {
+                        'content': guess.content,
+                        'votant': request.user.username
+                    }
                 }
-            }
-        )
+            )
+        else:
+            async_to_sync(channel_layer.group_send)(
+                f'game_{game_id}',
+                {
+                    'type': 'hand_finished',
+                }
+            )
 
     return handle_redirection(request=request)
 
