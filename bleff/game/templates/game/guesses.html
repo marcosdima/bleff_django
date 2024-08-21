@@ -9,7 +9,7 @@
                     <legend><h2>Vote a guess</h2></legend>
                     {% for guess in guesses %}
                         <div>
-                            <input type="radio" name="guess" id="{{ guess.id }}" value="{{ game_id }}">
+                            <input type="radio" name="guess" id="{{ guess.id }}" value="{{ guess.id }}">
                             <label>{{ hand.word.word }} means: {{ guess.content }}</label>
                         </div>
                     {% endfor %}
