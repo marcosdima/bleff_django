@@ -1,20 +1,23 @@
 {% extends 'game/base.html' %}
 
 {% block content %}
-    <div class="container" data-template="waiting">
-        <ul id="usernames">
-            {% for user in users %}
-                <li id="{{user}}"><h1>{{user}}</h1></li>
-            {% endfor %}
-        </ul>
-
-        {% if not game.creator or game.creator.id == user.id %}
-            <form action="{% url 'game:start_game' game_id %}" method="post">
-                {% csrf_token %}
-                <input id="start_game" type="submit" value="Start Game">
-            </form>
-        {% endif %}
-
+    <div class="container" data-template="waiting"> 
+        <form action="{% url 'game:start_game' game_id %}" method="post" class="main_container">
+            {% csrf_token %}
+            <fieldset>
+                <legend><h2>Waiting List</h2></legend>
+                <ul id="usernames">
+                    {% for user in users %}
+                        <li id="{{user}}"><h1>{{user}}</h1></li>
+                    {% endfor %}
+                </ul>
+            </fieldset>
+            
+            {% if not game.creator or game.creator.id == user.id %}
+                <input class="button" id="start_game" type="submit" value="Start Game">
+            {% endif %}
+        </form>
+        
         <div>Players Count: {{object_list|length}}</div>
         {% for condition in conditions %}
             <div>{{condition.tag}}: {{condition.value}}</div>
