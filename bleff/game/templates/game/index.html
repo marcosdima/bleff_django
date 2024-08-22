@@ -1,48 +1,59 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bleff</title>
+    <link rel="stylesheet" href="{% static 'bleff/css/styles.css' %}">
 </head>
 <body>
-    {% if object_list %}
-        <form action="{% url 'game:enter_game' %}" method="post">
-            {% csrf_token %}
+    <form action="{% url 'game:create' %}" method="post" class="main_container">
+        {% csrf_token %}
+        <fieldset class="row_container">
+            <legend><h2>Create a Game</h2></legend>
+                
+                <div class="pointer">
+                    <label for="language">Language: </label>
+                    <select id="language" name="language">
+                        {% for language in languages %}
+                            <option value={{language.tag}}>{{language.name}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                {% for condition, values in conditions %}
+                    <div class="pointer">
+                        <label for={{condition}}>{{condition}} </label>
+                        <select id={{condition}} name={{condition}}>
+                                {% for i in values%}
+                                    <option value={{i}}>{{i}}</option>
+                                {% endfor %}
+                        </select>
+                    </div>
+                {% endfor %}
+        </fieldset>
+        <input class="button" type="submit" value="Create">
+    </form>
+    
+    <form action="{% url 'game:enter_game' %}" method="post" class="main_container">
+        {% csrf_token %}
+        {% if object_list %}
             <fieldset>
                 {% for game in object_list %}
-                    <div>
+                    <div class="pointer">
                         <input type="radio" name="game" id="game{{ forloop.counter }}" value="{{ game.id }}">
                         <label>Game {{game.id}} ~ Created by: {{game.creator}}</label>
                     </div>
                 {% endfor %}
             </fieldset>
-            <input type="submit" value="Enter">
-        </form>
-    {% else %}
-        <div>No games are available.</div>
-    {% endif %}
-    <form action="{% url 'game:create' %}" method="post">
-        {% csrf_token %}
-        <fieldset>
-            <legend><h2>Create a Game</h2></legend>
-                <label for="language">Language: </label>
-                <select id="language" name="language">
-                    {% for language in languages %}
-                        <option value={{language.tag}}>{{language.name}}</option>
-                    {% endfor %}
-                </select>
-
-                {% for condition, values in conditions %}
-                    <label for={{condition}}>{{condition}} </label>
-                    <select id={{condition}} name={{condition}}>
-                            {% for i in values%}
-                                <option value={{i}}>{{i}}</option>
-                            {% endfor %}
-                    </select>
-                {% endfor %}
-        </fieldset>
-        <input type="submit" value="Create">
+            <input class="button" type="submit" value="Enter">
+        {% else %}
+            <fieldset>
+                <div>No games are available.</div>
+            </fieldset>
+        {% endif %}
     </form>
 </body>
 </html>

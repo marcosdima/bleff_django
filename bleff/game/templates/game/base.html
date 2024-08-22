@@ -12,9 +12,10 @@
     </script>
     <script src="{% static 'game/js/WebSocketManager.js' %}" type="module"></script>
     <script src="{% static 'game/js/WebSocketSetup.js' %}" type="module"></script>
+    <link rel="stylesheet" href="{% static 'bleff/css/styles.css' %}">
 </head>
 <body>
-    <main>
+    <main class="main_container">
         {% block content %}{% endblock %}
     </main>
 </body>
