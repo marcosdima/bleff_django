@@ -18,7 +18,7 @@ def login_view(request):
                 return redirect(reverse('game:index'))
             
     form = AuthenticationForm()
-    return render(request, 'users/login.html', {'form': form})
+    return render(request, 'users/login.html', {'form': form, 'label': 'Login'})
 
 
 def logout_view(request):
@@ -26,3 +26,15 @@ def logout_view(request):
         logout(request)
     
     return redirect('users:login')
+
+
+def signup_view(request):
+    if request.method == "POST":
+        form = SignUpForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('game:index')
+    else:
+        form = SignUpForm()
+    return render(request, 'users/login.html', {'form': form, 'label': 'Sign Up'})
