@@ -25,7 +25,9 @@ def leader_required(handler):
         def _wrapped_view(request, *args, **kwargs):
             game_id = kwargs.get('game_id')
 
-            if not get_game_hand(game_id=game_id).leader.id == request.user.id:
+            hand = get_game_hand(game_id=game_id)
+
+            if not hand or not hand.leader.id == request.user.id:
                 return handler(request)
             
             return view_func(request, *args, **kwargs)
