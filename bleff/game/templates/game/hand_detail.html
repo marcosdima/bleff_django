@@ -3,28 +3,28 @@
 {% block content %}
     <div class="container" data-template="hand_detail">
         <h1>Hand: {{ hand.word }} {{gameId}}</h1>
-        <div id="votes">
+        <fieldset id="votes">
             {% for vote in votes %}
                 <div>
                     <label>~ Vote '{{ vote.to.guess.content }}' from {{ vote.user }}</label>
                 </div>
             {% endfor %}
-        </div>
+        </fieldset>
         <hr>
         {% if hand.finished_at %}
-            <div>
+            <fieldset>
                 {% for guess in guesses %}
                     <div>
                         <label>{{ hand.word.word }} guess: '{{ guess.content }}' by {{ guess.writer }}. Votes: {{ guess.votes }}</label>
                     </div>
                 {% endfor %}
-            </div>
+            </fieldset>
         {% endif %}
         <hr>
         {% if not hand.game.creator or hand.game.creator.id == user.id %}
             <form action="{% url 'game:start_game' hand.game.id %}" method="post">
                 {% csrf_token %}
-                <input type="submit" value="Next Hand">
+                <input class="button" type="submit" value="Next Hand">
             </form>
         {% endif %}
     </div>
