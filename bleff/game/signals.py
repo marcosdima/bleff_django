@@ -104,7 +104,14 @@ def hand_creation_restriction(sender, instance, **kwargs):
 
 
 @receiver(pre_save, sender=Game)
-def user_already_playing(sender, instance, **kwargs):
+def user_already_playing_for_game_creation(sender, instance, **kwargs):
     if not instance.pk and instance.creator:
         if Play.objects.filter(user=instance.creator).exclude(game__finished_at__isnull=False).exists():
+            raise ValidationError('User is already playing something')
+        
+
+@receiver(pre_save, sender=Play)
+def user_already_playing_for_play_creation(sender, instance, **kwargs):
+    if not instance.pk and instance.user:
+        if Play.objects.filter(user=instance.user).exclude(game__finished_at__isnull=False).exists():
             raise ValidationError('User is already playing something')
