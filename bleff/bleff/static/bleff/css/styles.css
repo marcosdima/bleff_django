@@ -1,5 +1,6 @@
 body {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
 }
@@ -8,13 +9,20 @@ body {
     display: flex;
     flex-direction: column;
     width: fit-content;
-
+    margin-bottom: 2rem;
 
     fieldset {
         padding: 2rem;
     }
 }
 
+.row_container {
+    display: flex;
+    flex-direction: row;
+    width: fit-content;
+}
+
+/* BUTTON */
 .button {
     padding: 10px 20px;
     cursor: pointer;
@@ -25,3 +33,22 @@ body {
 .button:hover {
     background-color: #ccc;
 }
+/* BUTTON */
+
+/* POINTER */
+.pointer {
+    cursor: pointer;
+    padding: 1.5rem;
+    margin: 1.5rem;
+    user-select: none;
+
+    label, input, select {
+        cursor: pointer;
+    }
+}
+
+.pointer:hover {
+    background-color: #ccc;
+    border-radius: 10%;
+}
+/* POINTER */

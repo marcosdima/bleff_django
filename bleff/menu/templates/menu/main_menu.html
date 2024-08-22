@@ -6,7 +6,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Main Menu</title>
-    <link rel="stylesheet" href="{% static 'menu/css/styles.css' %}">
     <link rel="stylesheet" href="{% static 'bleff/css/styles.css' %}">
 </head>
 <body>
@@ -29,6 +28,7 @@
         <input class="button" type="submit" value="Go">
     </form>
     <script>
+        // TODO: Move this to a single JS file so that it can be imported and reused in any template.
         function selectOption(inputId) {
             document.querySelectorAll('input[name="redirect"]').forEach(function(input) {
                 input.checked = false;
