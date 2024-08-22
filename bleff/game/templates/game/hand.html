@@ -3,17 +3,17 @@
 {% block content %}
     <div class="container" data-template="hand">
         {% if words_to_choose %}
-            <form action="{% url 'game:choose' hand.game.id %}" method="post">
+            <form action="{% url 'game:choose' hand.game.id %}" method="post" class="main_container">
                 {% csrf_token %}
                 <fieldset>
                     {% for choice in words_to_choose %}
-                        <div>
-                            <input type="radio" name="choice" id="choice{{ forloop.counter }}" value="{{ choice }}">
+                        <div class="pointer">
+                            <input type="radio" name="choice" id="choice{{ forloop.counter }}" value="{{ choice.word }}">
                             <label>{{choice}}</label>
                         </div>
                     {% endfor %}
                 </fieldset>
-                <input id="choose" type="submit" value="Choose">
+                <input class="button" id="choose" type="submit" value="Choose">
             </form>
         {% elif not hand.word %}
             <div>Waiting {{hand.leader}} to choose a word</div>

@@ -10,7 +10,7 @@ from django.db.models import Model
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
-from .models import Game, HandGuess, Language, Play, Hand, Vote, Word, Guess, ConditionTag, Condition
+from .models import Game, HandGuess, Language, Meaning, Play, Hand, Vote, Word, Guess, ConditionTag, Condition
 from .utils import plays_game, get_game_hand, get_hand_choice_words, remove_fields, conditions_are_met, is_leader, votes_remaining, already_vote, last_hand
 from .decorators import play_required, leader_required, conditions_met
 
@@ -195,7 +195,7 @@ def hand_view(request, game_id):
     words = []
     
     if request.user.id == hand.leader.id and not hand.word:
-        words = get_hand_choice_words(hand=hand)
+        words = [Meaning.objects.get(word=w, language=hand.game.idiom) for w in get_hand_choice_words(hand=hand)]
 
     return render(request, 'game/hand.html', {"hand": hand, "words_to_choose": words, "game_id": game_id, "game": hand.game })
 
