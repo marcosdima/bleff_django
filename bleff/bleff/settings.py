@@ -123,7 +123,6 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / "bleff" / "static",
     BASE_DIR / "game" / "static",
-    BASE_DIR / "menu" / "static",
 ]
 
 # Default primary key field type
