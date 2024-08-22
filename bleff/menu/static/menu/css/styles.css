@@ -1,20 +1,3 @@
-body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-#redirectForm {
-    display: flex;
-    flex-direction: column;
-    width: fit-content;
-
-
-    fieldset {
-        padding: 2rem;
-    }
-}
-
 .pointer {
     cursor: pointer;
     padding: 1.5rem;

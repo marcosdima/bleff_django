@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="{% static 'bleff/css/styles.css' %}">
 </head>
 <body>
-    <form action="" method="get" id="redirectForm">
+    <form action="" method="get" class="main_container" id="redirectForm">
         <fieldset>
             <legend><h2>Main Menu</h2></legend>
             <div class="pointer" onclick="selectOption('login')">
@@ -40,9 +40,9 @@
             event.preventDefault();
             const selectedUrl = document.querySelector('input[name="redirect"]:checked')?.value;
             if (selectedUrl) {
-                window.location.href = selectedUrl; // Redirige a la URL seleccionada
+                window.location.href = selectedUrl;
             } else {
-                alert('Please select an option.'); // Mensaje de advertencia si no se selecciona nada
+                alert('Please select an option.');
             }
         });
     </script>
