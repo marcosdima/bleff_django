@@ -3,18 +3,18 @@
 {% block content %}
     <div class="container" data-template="guesses">
         {% if guesses %}
-            <form action="{% url 'game:vote' game_id %}" method="post">
+            <form action="{% url 'game:vote' game_id %}" method="post" class="main_container">
                 {% csrf_token %}
                 <fieldset>
                     <legend><h2>Vote a guess</h2></legend>
                     {% for guess in guesses %}
-                        <div>
+                        <div class="pointer">
                             <input type="radio" name="guess" id="{{ guess.id }}" value="{{ guess.id }}">
                             <label>{{ hand.word.word }} means: {{ guess.content }}</label>
                         </div>
                     {% endfor %}
                 </fieldset>
-                <input type="submit" value="Vote">
+                <input class="button" type="submit" value="Vote">
             </form>
         {% else %}
             <div>Waiting for other guesses</div>
