@@ -2,21 +2,24 @@
 
 {% block content %}
     <div class="container" data-template="check">
-        <form action="{% url 'game:check_guesses' game_id %}" method="post" >
+        <form action="{% url 'game:check_guesses' game_id %}" method="post" class="main_container">
             {% csrf_token %}
-            <legend><h2>Check guesses</h2></legend>
-            <div id="guesses_to_check">
-                {% for guess in guesses %}
-                    <fieldset>
-                        <label>{{ hand.word.word }} means: {{ guess.content }}</label>
-                        <select id="{{guess.id}}" name="{{guess.id}}">
-                            <option value="False">Ok</option>
-                            <option value="True">Remove</option>
-                        </select>
-                    </fieldset>
-                {% endfor %}
-            </div>
-            <input type="submit" value="Ready" id="checked">
+            <fieldset>
+                <legend><h2>Check guesses</h2></legend>
+                <div id="guesses_to_check">
+                    {% for guess in guesses %}
+                        <fieldset>
+                            <legend>{{ hand.word.word }} means:</legend>
+                            <label>{{ guess.content }}</label>
+                            <select id="{{guess.id}}" name="{{guess.id}}">
+                                <option value="False">Ok</option>
+                                <option value="True">Remove</option>
+                            </select>
+                        </fieldset>
+                    {% endfor %}
+                </div>
+            </fieldset>
+            <input class="button" type="submit" value="Ready" id="checked">
         </form>
     </div>
 {% endblock %}
