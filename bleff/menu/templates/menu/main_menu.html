@@ -1,13 +1,50 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Main Menu</title>
+    <link rel="stylesheet" href="{% static 'menu/css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'bleff/css/styles.css' %}">
 </head>
 <body>
-    <h2>Main Menu</h2>
-    <a href="{% url 'users:login' %}">Login</a>
-    <a href="{% url 'game:index' %}">Play</a>
+    <form action="" method="get" id="redirectForm">
+        <fieldset>
+            <legend><h2>Main Menu</h2></legend>
+            <div class="pointer" onclick="selectOption('login')">
+                <input type="radio" name="redirect" id="login" value="{% url 'users:login' %}">
+                <label for="login">Log In</label>
+            </div>
+            <div class="pointer" onclick="selectOption('signup')">
+                <input type="radio" name="redirect" id="signup" value="{% url 'users:signup' %}">
+                <label for="signup">Sign Up</label>
+            </div>
+            <div class="pointer" onclick="selectOption('play')">
+                <input type="radio" name="redirect" id="play" value="{% url 'game:index' %}">
+                <label for="play">Play</label>
+            </div>
+        </fieldset>
+        <input class="button" type="submit" value="Go">
+    </form>
+    <script>
+        function selectOption(inputId) {
+            document.querySelectorAll('input[name="redirect"]').forEach(function(input) {
+                input.checked = false;
+            });
+        
+            document.getElementById(inputId).checked = true;
+        }
+        document.getElementById('redirectForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const selectedUrl = document.querySelector('input[name="redirect"]:checked')?.value;
+            if (selectedUrl) {
+                window.location.href = selectedUrl; // Redirige a la URL seleccionada
+            } else {
+                alert('Please select an option.'); // Mensaje de advertencia si no se selecciona nada
+            }
+        });
+    </script>
 </body>
 </html>

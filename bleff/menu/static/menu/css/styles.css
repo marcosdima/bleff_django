@@ -1,0 +1,32 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#redirectForm {
+    display: flex;
+    flex-direction: column;
+    width: fit-content;
+
+
+    fieldset {
+        padding: 2rem;
+    }
+}
+
+.pointer {
+    cursor: pointer;
+    padding: 1.5rem;
+    margin: 1.5rem;
+    user-select: none;
+
+    input {
+        cursor: pointer;
+    }
+}
+
+.pointer:hover {
+    background-color: #ccc;
+    border-radius: 10%;
+}
