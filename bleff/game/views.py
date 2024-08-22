@@ -180,6 +180,7 @@ def start_game(request, game_id):
     # Creates hand if there is no game-hand and the player is the creator
     start_hand = create_or_none(model=Hand, fields={'game': game}) if not game.creator or request.user == game.creator else None
 
+    # TODO: This sends an event that affects the creator too...
     if start_hand:
         ws_event({'type': 'start_game'}, game_id)
 

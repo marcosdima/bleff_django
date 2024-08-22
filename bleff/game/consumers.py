@@ -21,6 +21,7 @@ class GameConsumer(WebsocketConsumer):
             self.game_name, self.channel_name
         )
 
+
     def start_game(self, event):
         game_id = int(self.game_id)
         self.send(text_data=json.dumps({"start_game": True, "url": reverse('game:hand', args=(game_id,))}))
