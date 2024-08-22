@@ -18,13 +18,13 @@
         {% elif not hand.word %}
             <div>Waiting {{hand.leader}} to choose a word</div>
         {% else %}
-            <form action="{% url 'game:make_guess' hand.game.id %}" method="post">
+            <form action="{% url 'game:make_guess' hand.game.id %}" method="post" class="main_container">
                 {% csrf_token %}
                 <fieldset>
                     <legend><h2>Write your guess for '{{hand.word}}':</h2></legend>
                     <textarea name="guess" id="guess" rows="10" cols="100"></textarea>
                 </fieldset>
-                <input id="send_guess" type="submit" value="Submit">
+                <input class="button" id="send_guess" type="submit" value="Submit">
             </form>
         {% endif %}
     </div>
