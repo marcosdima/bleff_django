@@ -140,3 +140,6 @@ def points_in_game(user: User, game_id: int) -> int:
 
     return votes_to_your_guesses + right_guesses + clean_leader_play + right_votes
     
+
+def get_game_users(game_id: int) -> list[User]:
+    return [p.user for p in Play.objects.filter(game__id=game_id)]
