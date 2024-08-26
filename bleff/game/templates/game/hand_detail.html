@@ -21,6 +21,15 @@
             </fieldset>
         {% endif %}
         <hr>
+            <fieldset>
+                <legend>Points</legend>
+                {% for point in points %}
+                    <div>
+                        <label>{{ point.user }}: {{ point.value }}pts</label>
+                    </div>
+                {% endfor %}
+            </fieldset>
+        <hr>
         {% if not hand.game.creator or hand.game.creator.id == user.id %}
             <form action="{% url 'game:start_game' hand.game.id %}" method="post">
                 {% csrf_token %}
