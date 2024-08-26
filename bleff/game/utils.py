@@ -103,3 +103,40 @@ def last_hand(game_id: int) -> Hand | None:
 def guesses_ready(game_id: int) -> bool:
     hand = get_game_hand(game_id=game_id)
     return not HandGuess.objects.filter(hand=hand, is_correct=None).exists()
+
+
+def points_in_game(user: User, game_id: int) -> int:
+    played = Play.objects.filter(user=user, game__id=game_id)
+
+    # If played does not exists, then the player didn't play this game.
+    if not played:
+        return 0
+    
+    game = played[0].game
+    
+    # TODO: Every pointing area could be customized.
+    
+    # Points for votes to your guesses. +1 for each
+    your_guesses = HandGuess.objects.filter(guess__writer=user, is_correct=False, hand__game=game).exclude(hand__leader=user)
+    votes_to_your_guesses = Vote.objects.filter(to__in=your_guesses).count()
+
+    # Points for guessing right. CUSTOM
+    right_guesses = HandGuess.objects.filter(guess__writer=user, is_correct=True, hand__game=game).count()
+
+    # Points for being the leader and nobody voted the right one. CUSTOM
+    definitions = HandGuess.objects.filter(guess__is_original=True, hand__leader=user)
+    clean_leader_play = definitions.exclude(id__in=[hg['to'] for hg in Vote.objects.filter(to__in=definitions).values('to')]).count()
+
+    # Points for your votes to the right definition. +1
+    right_votes = Vote.objects.filter(user=user, to__guess__is_original=True).count()
+
+    # Sets the custom points values.
+    for condition in Condition.objects.filter(game=game):
+        tag = str(condition.tag)
+        if tag == 'POINTS_FOR_GUESSING_RIGHT':
+            right_guesses *= condition.value
+        elif tag == 'POINTS_FOR_CLEAN_LEADER':
+            clean_leader_play *= condition.value
+
+    return votes_to_your_guesses + right_guesses + clean_leader_play + right_votes
+    

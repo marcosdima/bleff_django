@@ -351,7 +351,6 @@ class PlayModelTest(TestCase):
            Play.objects.create(game=second_game, user=self.user)
 
 
-
 class HandModelTest(TestCase):
     def setUp(self):
         self.user = create_root_user()
@@ -1574,7 +1573,7 @@ class VoteViewTest(TestCase):
             self.secondary_guess.id: False
         }
         login_root_user(self)
-        self.client.post(reverse('game:check_guesses', args=[self.game.id]), data=data)
+        self.client.post(reverse('game:check_guesses', args=[self.game.id]), data=data) #  TODO: Fix websocket connection problem.
 
     
     def test_vote_your_guess(self):
@@ -1599,3 +1598,120 @@ class VoteViewTest(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('game:hand_detail', args=[self.hand.id]))
         self.assertEqual(Vote.objects.all().count(), 0)
+
+
+class PointsFunctionTest(TestCase):
+    def setUp(self):
+        self.user = create_root_user()
+        self.secondaryUser = create_secondary_user()
+        self.lang = create_basic_language()
+        self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+        Play.objects.create(game=self.game, user=self.secondaryUser)
+
+        self.words = ['Cow', 'Diary', 'Python', 'Goose', 'Cheese']
+        for word in self.words:
+            create_word_meaning(word=word, language=self.lang, content=f'An explanation of what "{word}" is in English.', word_translation=word)
+
+        self.word = Word.objects.get(word=self.words[0])
+        self.word_2 = Word.objects.get(word=self.words[1])
+
+        self.hand = Hand.objects.create(game=self.game, leader=self.user)
+        self.hand.word = self.word
+        self.hand.save()
+  
+        self.root_guess = Guess.objects.create(writer=self.user, content='A content sdasdasdasdasda', hand=self.hand)
+        self.secondary_guess = Guess.objects.create(writer=self.secondaryUser, content='A content sdasdasdasdasda 2', hand=self.hand)
+
+        # To vote, first should be checked.
+        data = {
+            self.root_guess.id: False,
+            self.secondary_guess.id: False
+        }
+        login_root_user(self)
+        self.client.post(reverse('game:check_guesses', args=[self.game.id]), data=data)
+
+    
+    def test_points_for_right_guess(self):
+        '''
+            Secondary user voted for the right guess, so he has 1 point.
+        '''
+        right = Guess.objects.filter(is_original=True)[0]
+        Vote.objects.create(to=HandGuess.objects.get(guess=right), user=self.secondaryUser)
+        self.assertEqual(utils.points_in_game(user=self.secondaryUser, game_id=self.game.id), 1)
+
+
+    def test_points_for_leader_bait(self):
+        '''
+            Secondary user voted for the leader bait's, so he has 0 point and leader has 1 (This point is custom, it can change).
+        '''
+        Vote.objects.create(to=HandGuess.objects.get(guess=self.root_guess), user=self.secondaryUser)
+        self.assertEqual(utils.points_in_game(user=self.secondaryUser, game_id=self.game.id), 0)
+        self.assertEqual(utils.points_in_game(user=self.user, game_id=self.game.id), 1)
+
+
+    def test_points_for_right_guess_and_someone_vote_yours(self):
+        '''
+            Secondary user voted for the right guess and another user voted secondary user's guess.
+        '''
+        user_extra = create_n_players(n=1, game=self.game)[0]
+        Guess.objects.create(writer=user_extra, content='A content sdasdasdasdasda 22', hand=self.hand)
+
+        right = Guess.objects.filter(is_original=True)[0]
+
+        Vote.objects.create(to=HandGuess.objects.get(guess=right), user=self.secondaryUser)
+        Vote.objects.create(to=HandGuess.objects.get(guess=self.secondary_guess), user=user_extra)
+
+        self.assertEqual(utils.points_in_game(user=self.secondaryUser, game_id=self.game.id), 2)
+        self.assertEqual(utils.points_in_game(user=self.user, game_id=self.game.id), 0)
+        self.assertEqual(utils.points_in_game(user=user_extra, game_id=self.game.id), 0)
+
+
+    def test_points_for_right_guess_and_someone_vote_the_bait(self):
+        '''
+            Secondary user voted for the right guess and another user voted for leader's guess.
+        '''
+        user_extra = create_n_players(n=1, game=self.game)[0]
+        Guess.objects.create(writer=user_extra, content='A content sdasdasdasdasda 22', hand=self.hand)
+
+        right = Guess.objects.filter(is_original=True)[0]
+
+        Vote.objects.create(to=HandGuess.objects.get(guess=right), user=self.secondaryUser)
+        Vote.objects.create(to=HandGuess.objects.get(guess=self.root_guess), user=user_extra)
+
+        self.assertEqual(utils.points_in_game(user=self.secondaryUser, game_id=self.game.id), 1)
+        self.assertEqual(utils.points_in_game(user=self.user, game_id=self.game.id), 0)
+        self.assertEqual(utils.points_in_game(user=user_extra, game_id=self.game.id), 0)
+
+
+    def test_points_everybody_voted_the_bait(self):
+        '''
+            Both secondary and extra voted the bait.
+        '''
+        user_extra = create_n_players(n=1, game=self.game)[0]
+        Guess.objects.create(writer=user_extra, content='A content sdasdasdasdasda 22', hand=self.hand)
+
+        Vote.objects.create(to=HandGuess.objects.get(guess=self.root_guess), user=self.secondaryUser)
+        Vote.objects.create(to=HandGuess.objects.get(guess=self.root_guess), user=user_extra)
+
+        self.assertEqual(utils.points_in_game(user=self.secondaryUser, game_id=self.game.id), 0)
+        self.assertEqual(utils.points_in_game(user=self.user, game_id=self.game.id), 1)
+        self.assertEqual(utils.points_in_game(user=user_extra, game_id=self.game.id), 0)
+
+
+    def test_points_everybody_voted_the_bait_but_custom_points(self):
+        '''
+            Both secondary and extra voted the bait.
+        '''
+        tag = create_condition_tag(tag='POINTS_FOR_CLEAN_LEADER', min=1)
+        extra_points = random.randint(1, 3)
+        Condition.objects.create(tag=tag, value=extra_points, game=self.game)
+
+        user_extra = create_n_players(n=1, game=self.game)[0]
+        Guess.objects.create(writer=user_extra, content='A content sdasdasdasdasda 22', hand=self.hand)
+
+        Vote.objects.create(to=HandGuess.objects.get(guess=self.root_guess), user=self.secondaryUser)
+        Vote.objects.create(to=HandGuess.objects.get(guess=self.root_guess), user=user_extra)
+
+        self.assertEqual(utils.points_in_game(user=self.secondaryUser, game_id=self.game.id), 0)
+        self.assertEqual(utils.points_in_game(user=self.user, game_id=self.game.id), extra_points)
+        self.assertEqual(utils.points_in_game(user=user_extra, game_id=self.game.id), 0)
