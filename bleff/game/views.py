@@ -11,7 +11,19 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
 from .models import Game, HandGuess, Language, Meaning, Play, Hand, Vote, Word, Guess, ConditionTag, Condition
-from .utils import plays_game, get_game_hand, get_hand_choice_words, remove_fields, conditions_are_met, is_leader, votes_remaining, already_vote, last_hand
+from .utils import (
+    plays_game,
+    get_game_hand,
+    get_hand_choice_words,
+    remove_fields,
+    conditions_are_met,
+    is_leader,
+    votes_remaining,
+    already_vote,
+    last_hand,
+    points_in_game,
+    get_game_users
+)
 from .decorators import play_required, leader_required, conditions_met
 
 def handle_redirection(request):
@@ -359,11 +371,13 @@ def hand_detail(request, hand_id):
     for guess in guesses:
         guess.votes = Vote.objects.filter(to__guess=guess).count()
 
+    game = hand.game
     context = {
         'hand': hand,
         'votes': Vote.objects.filter(to_id__in=hand_guesses),
         'guesses': guesses,
-        'game_id': hand.game.id
+        'game_id': hand.game.id,
+        'points': [{'user': user, 'value': points_in_game(user=user, game_id=game.id)} for user in get_game_users(game_id=game.id)]
     }
 
     return render(request=request, template_name='game/hand_detail.html', context=context)
