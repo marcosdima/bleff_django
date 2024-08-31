@@ -143,3 +143,8 @@ def points_in_game(user: User, game_id: int) -> int:
 
 def get_game_users(game_id: int) -> list[User]:
     return [p.user for p in Play.objects.filter(game__id=game_id)]
+
+
+def guessed_right(user: User, hand: Hand):
+    hg = HandGuess.objects.get(hand=hand, guess__writer=user)
+    return hg.is_correct

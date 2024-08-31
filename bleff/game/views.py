@@ -22,7 +22,8 @@ from .utils import (
     already_vote,
     last_hand,
     points_in_game,
-    get_game_users
+    get_game_users,
+    guessed_right
 )
 from .decorators import play_required, leader_required, conditions_met
 
@@ -58,8 +59,9 @@ def handle_redirection(request):
     if is_leader_var and HandGuess.objects.filter(is_correct=None).exists():
         return HttpResponseRedirect(reverse("game:check_guesses", args=(game.id,)))
 
-    # If the guess was already made and you are not the leader, or leader already checked.
-    if not is_leader_var and not already_vote(user=request.user, game_id=game.id):
+
+    # If the guess was already made and you are not the leader, or leader already checked. BUT YOU DON'T GUESSED RIGHT!
+    if not is_leader_var and not already_vote(user=request.user, game_id=game.id) and not guessed_right(user=request.user, hand=hand):
         return HttpResponseRedirect(reverse("game:guesses", args=(game.id,)))
 
     # If you already vote, then go to the end.
