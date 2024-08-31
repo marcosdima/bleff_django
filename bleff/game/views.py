@@ -207,11 +207,14 @@ def start_game(request, game_id):
 def hand_view(request, game_id):
     hand = get_game_hand(game_id)
     words = []
+    word = ''
     
     if request.user.id == hand.leader.id and not hand.word:
         words = [Meaning.objects.get(word=w, language=hand.game.idiom) for w in get_hand_choice_words(hand=hand)]
+    elif hand.word:
+        word = Meaning.objects.get(word=hand.word, language=hand.game.idiom).word_translation
 
-    return render(request, 'game/hand.html', {"hand": hand, "words_to_choose": words, "game_id": game_id, "game": hand.game })
+    return render(request, 'game/hand.html', {"hand": hand, "words_to_choose": words, "game_id": game_id, "game": hand.game, "word": word })
 
 
 @login_required

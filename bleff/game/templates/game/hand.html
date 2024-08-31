@@ -21,7 +21,7 @@
             <form action="{% url 'game:make_guess' hand.game.id %}" method="post" class="main_container">
                 {% csrf_token %}
                 <fieldset>
-                    <legend><h2>Write your guess for '{{hand.word}}':</h2></legend>
+                    <legend><h2>Write your guess for '{{word}}':</h2></legend>
                     <textarea name="guess" id="guess" rows="10" cols="100"></textarea>
                 </fieldset>
                 <input class="button" id="send_guess" type="submit" value="Submit">
