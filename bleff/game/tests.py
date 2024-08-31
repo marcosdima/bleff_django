@@ -6,9 +6,15 @@ from django.forms import ValidationError
 from django.db.utils import IntegrityError
 from django.test import TestCase
 from django.contrib.auth.models import User
+from django.apps import apps
 
 from .models import ConditionTag, Word, Language, Meaning, Game, Play, Hand, Guess, HandGuess, Vote, Choice, Condition
 from . import utils
+
+def clean_data():
+    for model in apps.get_models():
+        model.objects.all().delete()
+
 
 def create_word_meaning(word: str, language: Language, word_translation: str, content: str):
     word = Word.objects.create(word=word)
@@ -27,6 +33,7 @@ def create_secondary_user():
 def create_basic_language():
     tag = 'EN'
     name = 'English'
+
     return Language.objects.create(tag=tag, name=name)
 
 
@@ -52,7 +59,17 @@ def create_condition_tag(tag: str, max: int = 4, min: int = 4) -> ConditionTag:
     return ConditionTag.objects.create(tag=tag, max=max, min=min)
 
 
-class WordModelTest(TestCase):
+class BaseTestCase(TestCase):
+    def setUp(self):
+        clean_data()
+
+
+class WordModelTest(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        super().setUp()
+
+
     def test_create_a_word(self):
         '''
             Create a word.
@@ -101,13 +118,17 @@ class WordModelTest(TestCase):
         self.assertEqual(text, word.__str__(), 'Str function does not works!')
 
 
-class LanguageModelTest(TestCase):
+class LanguageModelTest(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        super().setUp()
+
     def test_create_a_language(self):
         '''
             Create a new language.
         '''
-        tag = 'EN'
-        name = 'English'
+        tag = 'EN2'
+        name = 'English2'
         language = Language.objects.create(tag=tag, name=name)
 
         try:
@@ -150,8 +171,8 @@ class LanguageModelTest(TestCase):
         '''
             Create a new language with an invalid name.
         '''
-        tag = 'EN'
-        name = 'EN'
+        tag = 'EK'
+        name = 'EK'
         language = Language.objects.create(tag=tag, name=name)
 
         with self.assertRaises(ValidationError):
@@ -169,16 +190,19 @@ class LanguageModelTest(TestCase):
         with self.assertRaises(IntegrityError):
             Language.objects.create(tag=tag, name=name)
 
+
     def test_language_str_function(self):
-        tag = 'EN'
-        name = 'English'
+        tag = 'EN2'
+        name = 'English2'
         language = Language.objects.create(tag=tag, name=name)
         self.assertEqual(f'{tag}-{name}', language.__str__(), 'Str function does not works!')
 
 
-class MeaningModelTest(TestCase):
+class MeaningModelTest(BaseTestCase):
     def setUp(self):
-        self.lang = Language.objects.create(tag='EN', name='English')
+        super().setUp()
+        super().setUp()
+        self.lang = create_basic_language()
 
 
     def test_create_a_meaning(self):
@@ -232,8 +256,10 @@ class MeaningModelTest(TestCase):
         self.assertEqual(f'{word_text}: {content}', meaning.__str__(), 'Str function does not works!')
 
 
-class GameModelTest(TestCase):
+class GameModelTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
+        super().setUp()
         self.user = create_root_user()
         self.lang = create_basic_language()
 
@@ -303,8 +329,10 @@ class GameModelTest(TestCase):
             gameAfterEnd.end()
 
 
-class PlayModelTest(TestCase):
+class PlayModelTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
+        super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
@@ -351,8 +379,10 @@ class PlayModelTest(TestCase):
            Play.objects.create(game=second_game, user=self.user)
 
 
-class HandModelTest(TestCase):
+class HandModelTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
+        super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
@@ -508,8 +538,10 @@ class HandModelTest(TestCase):
             Hand.objects.create(game=self.game).full_clean()
 
 
-class GuessModelTest(TestCase):
+class GuessModelTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
+        super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
@@ -598,8 +630,9 @@ class GuessModelTest(TestCase):
             Guess.objects.create(hand=self.hand, content=self.content, writer=self.secondaryUser).full_clean()
 
 
-class HandGuessModelTest(TestCase):
+class HandGuessModelTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
@@ -631,8 +664,9 @@ class HandGuessModelTest(TestCase):
         '''
             Check if is_correct field has the value None by default.
         '''
-        guess = Guess.objects.create(hand=self.hand, content=self.content, writer=self.user)
-        self.assertEqual(None, HandGuess.objects.get(hand=self.hand, guess=guess).is_correct)
+        Play.objects.create(game=self.game, user=self.secondaryUser)
+        secondary_guess = Guess.objects.create(writer=self.secondaryUser, content='A content sdasdasdasdasda 2', hand=self.hand)
+        self.assertEqual(None, HandGuess.objects.get(hand=self.hand, guess=secondary_guess).is_correct)
 
 
     def test_is_correct_can_be_changed(self):
@@ -640,14 +674,20 @@ class HandGuessModelTest(TestCase):
             Change the value of is correct.
         '''
         guess = Guess.objects.create(hand=self.hand, writer=self.user)
-        handguess = HandGuess.objects.get(hand=self.hand, guess=guess)
-        self.assertEqual(None, handguess.is_correct)
-        
-        handguess.is_correct = True
-        handguess.save()
+        Play.objects.create(game=self.game, user=self.secondaryUser)
+        secondary_guess = Guess.objects.create(writer=self.secondaryUser, content='A content sdasdasdasdasda 2', hand=self.hand)
 
-        handguess_post_save = HandGuess.objects.get(hand=self.hand, guess=guess)
-        self.assertEqual(True, handguess_post_save.is_correct)
+        handguess = HandGuess.objects.get(hand=self.hand, guess=guess)
+        secondary_handguess = HandGuess.objects.get(hand=self.hand, guess=secondary_guess)
+
+        self.assertEqual(False, handguess.is_correct)
+        self.assertEqual(None, secondary_handguess.is_correct)
+        
+        secondary_handguess.is_correct = True
+        secondary_handguess.save()
+
+        secondary_handguess_post_save = HandGuess.objects.get(hand=self.hand, guess=secondary_guess)
+        self.assertEqual(True, secondary_handguess_post_save.is_correct)
 
 
     def test_is_correct_can_be_changed_unless_it_is_the_default_guess(self):
@@ -672,8 +712,10 @@ class HandGuessModelTest(TestCase):
             handguess.save()
 
 
-class VoteModelTest(TestCase):
+class VoteModelTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
+        super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
@@ -724,8 +766,10 @@ class VoteModelTest(TestCase):
             Vote.objects.create(to=HandGuess.objects.get(guess=self.guess), user=self.user)
 
 
-class ChoiceModelTest(TestCase):
+class ChoiceModelTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
+        super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
@@ -777,8 +821,9 @@ class ChoiceModelTest(TestCase):
             Choice.objects.create(hand=self.hand, word=anyWord)
 
 
-class UtilsFunctionsTest(TestCase):
+class UtilsFunctionsTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
@@ -966,7 +1011,8 @@ class UtilsFunctionsTest(TestCase):
         hand.word = self.word
         hand.save()
 
-        Guess.objects.create(writer=self.user, content='CONTENT A CONTENT A CONTENT', hand=hand)
+        Play.objects.create(game=self.game, user=self.secondaryUser)
+        Guess.objects.create(writer=self.secondaryUser, content='CONTENT A CONTENT A CONTENT', hand=hand)
 
         self.assertTrue(utils.there_are_guesses_to_check(game_id=self.game.id))
 
@@ -1056,8 +1102,9 @@ class UtilsFunctionsTest(TestCase):
         self.assertEqual(second_hand.id, utils.last_hand(game_id=self.game.id).id)
 
 
-class GameViewTest(TestCase):
+class GameViewTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.user = create_root_user()
         self.lang = create_basic_language()
 
@@ -1083,8 +1130,9 @@ class GameViewTest(TestCase):
         self.assertQuerySetEqual(response.context["object_list"], [])
 
 
-class EnterGameViewTest(TestCase):
+class EnterGameViewTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.user = create_root_user()
         self.lang = create_basic_language()
         self.secondaryUser = create_secondary_user()
@@ -1117,8 +1165,9 @@ class EnterGameViewTest(TestCase):
         self.assertEqual(Play.objects.filter(game=self.game).count(), 2)
 
 
-class CreateGameViewTest(TestCase):
+class CreateGameViewTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.user = create_root_user()
         self.lang = create_basic_language()
         self.secondaryUser = create_secondary_user()
@@ -1165,8 +1214,9 @@ class CreateGameViewTest(TestCase):
         self.assertEqual(Condition.objects.all()[0].value, Condition.objects.all()[1].value)
 
 
-class WaitingViewTest(TestCase):
+class WaitingViewTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
@@ -1205,8 +1255,9 @@ class WaitingViewTest(TestCase):
         self.assertTrue(response.url.startswith('/users/login/'))
 
 
-class StartGameViewTest(TestCase):
+class StartGameViewTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
@@ -1277,8 +1328,9 @@ class StartGameViewTest(TestCase):
         self.assertEqual(response.url, reverse('game:waiting', args=[self.game.id]))
 
 
-class HandViewTest(TestCase):
+class HandViewTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
@@ -1342,8 +1394,9 @@ class HandViewTest(TestCase):
         self.assertNotContains(response, self.words.__str__())
 
 
-class ChooseViewTest(TestCase):
+class ChooseViewTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
@@ -1409,8 +1462,9 @@ class ChooseViewTest(TestCase):
         self.assertEqual(Hand.objects.get(id=self.hand.id).word, None)
 
 
-class MakeGuessViewTest(TestCase):
+class MakeGuessViewTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
@@ -1468,12 +1522,15 @@ class MakeGuessViewTest(TestCase):
         self.assertEqual(response.url, reverse('game:index'))
 
 
-class CheckGuessesViewTest(TestCase):
+class CheckGuessesViewTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
+        
         self.lang = create_basic_language()
         self.game = Game.objects.create(idiom=self.lang, creator=self.user)
+        Play.objects.create(game=self.game, user=self.secondaryUser)
 
         self.words = ['Cow', 'Diary', 'Python', 'Goose', 'Cheese']
         for word in self.words:
@@ -1482,11 +1539,10 @@ class CheckGuessesViewTest(TestCase):
         self.word = Word.objects.get(word=self.words[0])
         self.word_2 = Word.objects.get(word=self.words[1])
 
-        self.hand = Hand.objects.create(game=self.game, leader=self.user)
-        self.hand.word = self.word
-        self.hand.save()
+        self.hand = Hand.objects.create(game=self.game, leader=self.user, word=self.word)
   
         self.root_guess = Guess.objects.create(writer=self.user, content='A content sdasdasdasdasda', hand=self.hand)
+        self.secondary_guess = Guess.objects.create(writer=self.secondaryUser, content='A content sdasdasdasdasda 2', hand=self.hand)
 
 
     def test_check_guesses(self):
@@ -1503,9 +1559,6 @@ class CheckGuessesViewTest(TestCase):
         '''
             Get to check_guesses.
         '''
-        Play.objects.create(game=self.game, user=self.secondaryUser)
-        Guess.objects.create(writer=self.secondaryUser, content='A content sdasdasdasdasda 2', hand=self.hand)
-
         login_secondary_user(self)
         
         response = self.client.get(reverse('game:check_guesses', args=[self.game.id]))
@@ -1518,15 +1571,14 @@ class CheckGuessesViewTest(TestCase):
             Get to check_guesses.
         '''
         login_root_user(self)
-
         data = {
-            self.root_guess.id: False 
+            self.secondary_guess.id: False 
         }
         response = self.client.post(reverse('game:check_guesses', args=[self.game.id]), data=data)
         
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('game:hand_detail', args=[self.game.id]))
-        self.assertEqual(HandGuess.objects.filter(hand=self.hand, is_correct=False).count(), 2)
+        self.assertEqual(HandGuess.objects.filter(hand=self.hand, is_correct=False).count(), 3)
 
 
     def test_check_guesses_post_but_removing(self):
@@ -1536,17 +1588,18 @@ class CheckGuessesViewTest(TestCase):
         login_root_user(self)
 
         data = {
-            self.root_guess.id: True 
+            self.secondary_guess.id: True 
         }
         response = self.client.post(reverse('game:check_guesses', args=[self.game.id]), data=data)
         
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('game:hand_detail', args=[self.game.id]))
-        self.assertEqual(HandGuess.objects.filter(hand=self.hand, is_correct=False).count(), 1)
+        self.assertEqual(HandGuess.objects.filter(hand=self.hand, is_correct=False).count(), 2)
 
 
-class VoteViewTest(TestCase):
+class VoteViewTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
@@ -1600,8 +1653,9 @@ class VoteViewTest(TestCase):
         self.assertEqual(Vote.objects.all().count(), 0)
 
 
-class PointsFunctionTest(TestCase):
+class PointsFunctionTest(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
