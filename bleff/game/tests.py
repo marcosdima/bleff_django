@@ -67,7 +67,6 @@ class BaseTestCase(TestCase):
 class WordModelTest(BaseTestCase):
     def setUp(self):
         super().setUp()
-        super().setUp()
 
 
     def test_create_a_word(self):
@@ -120,7 +119,6 @@ class WordModelTest(BaseTestCase):
 
 class LanguageModelTest(BaseTestCase):
     def setUp(self):
-        super().setUp()
         super().setUp()
 
     def test_create_a_language(self):
@@ -201,7 +199,6 @@ class LanguageModelTest(BaseTestCase):
 class MeaningModelTest(BaseTestCase):
     def setUp(self):
         super().setUp()
-        super().setUp()
         self.lang = create_basic_language()
 
 
@@ -258,7 +255,6 @@ class MeaningModelTest(BaseTestCase):
 
 class GameModelTest(BaseTestCase):
     def setUp(self):
-        super().setUp()
         super().setUp()
         self.user = create_root_user()
         self.lang = create_basic_language()
@@ -332,7 +328,6 @@ class GameModelTest(BaseTestCase):
 class PlayModelTest(BaseTestCase):
     def setUp(self):
         super().setUp()
-        super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
@@ -381,7 +376,6 @@ class PlayModelTest(BaseTestCase):
 
 class HandModelTest(BaseTestCase):
     def setUp(self):
-        super().setUp()
         super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
@@ -540,7 +534,6 @@ class HandModelTest(BaseTestCase):
 
 class GuessModelTest(BaseTestCase):
     def setUp(self):
-        super().setUp()
         super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
@@ -715,7 +708,6 @@ class HandGuessModelTest(BaseTestCase):
 class VoteModelTest(BaseTestCase):
     def setUp(self):
         super().setUp()
-        super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
         self.lang = create_basic_language()
@@ -766,9 +758,20 @@ class VoteModelTest(BaseTestCase):
             Vote.objects.create(to=HandGuess.objects.get(guess=self.guess), user=self.user)
 
 
+    def test_vote_but_you_guessed_right(self):
+        """
+            If you guessed right, then you should not vote.
+        """
+        hg = HandGuess.objects.get(hand=self.hand, guess=self.guess)
+        hg.is_correct = True
+        hg.save()
+
+        with self.assertRaises(ValidationError):
+            Vote.objects.create(to=HandGuess.objects.get(guess=self.guess), user=self.user)
+
+
 class ChoiceModelTest(BaseTestCase):
     def setUp(self):
-        super().setUp()
         super().setUp()
         self.user = create_root_user()
         self.secondaryUser = create_secondary_user()
@@ -1646,6 +1649,22 @@ class VoteViewTest(BaseTestCase):
             Shouldn't let you vote.
         '''
         login_root_user(self)
+        response = self.client.post(path=reverse('game:vote', args=[self.game.id]), data={'guess': self.secondary_guess.id})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('game:hand_detail', args=[self.hand.id]))
+        self.assertEqual(Vote.objects.all().count(), 0)
+
+
+    def test_vote_but_you_guessed_right(self):
+        """
+            If you guessed right, then you should not be able to vote.
+        """
+        hg = HandGuess.objects.get(hand=self.hand, guess=self.secondary_guess)
+        hg.is_correct = True
+        hg.save()
+
+        login_secondary_user(self)
         response = self.client.post(path=reverse('game:vote', args=[self.game.id]), data={'guess': self.secondary_guess.id})
 
         self.assertEqual(response.status_code, 302)
