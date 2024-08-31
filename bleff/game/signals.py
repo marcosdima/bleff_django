@@ -52,6 +52,8 @@ def vote_creator_restriction(sender, instance, **kwargs):
             raise ValidationError("You can't vote in a finished hand")
         elif Vote.objects.filter(to__hand=instance.to.hand, user=instance.user).exists():
             raise ValidationError("You can't vote again in the same hand")
+        elif HandGuess.objects.filter(hand=instance.to.hand, is_correct=True, guess__writer=instance.user):
+            raise ValidationError("You can't vote if you guessed right")
         
 
 @receiver(pre_save, sender=Hand)
