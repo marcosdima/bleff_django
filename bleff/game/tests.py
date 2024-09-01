@@ -59,6 +59,18 @@ def create_condition_tag(tag: str, max: int = 4, min: int = 4) -> ConditionTag:
     return ConditionTag.objects.create(tag=tag, max=max, min=min)
 
 
+def create_random_guesses(game: Game):
+    players = [u.user for u in Play.objects.filter(game=game)]
+    hand = utils.get_game_hand(game_id=game.id)
+
+    for player in players:
+        content = f"{player.username}'s guess"
+        guess = Guess.objects.create(hand=hand, content=content, writer=player)
+        hg = HandGuess.objects.get(guess=guess)
+        hg.is_correct = False
+        hg.save()
+
+
 class BaseTestCase(TestCase):
     def setUp(self):
         clean_data()
@@ -1121,6 +1133,52 @@ class UtilsFunctionsTest(BaseTestCase):
         hand.end()
         second_hand = Hand.objects.create(game=self.game)
         self.assertEqual(second_hand.id, utils.last_hand(game_id=self.game.id).id)
+
+
+    def test_game_finished(self):
+        """
+            It should return True if the wind condition values was reached by a player. In this test case I'll emulate that.
+        """
+        Play.objects.create(game=self.game, user=self.secondaryUser)
+        hand = Hand.objects.create(game=self.game, leader=self.secondaryUser)
+        create_n_players(n=4, game=self.game)
+        tag = create_condition_tag(tag='WIN_CONDITION', max=10, min=1)
+        Condition.objects.create(game=self.game, tag=tag, value=4)
+
+        create_random_guesses(game=self.game)
+        
+        guess_target = HandGuess.objects.get(guess=Guess.objects.get(writer=self.user))
+
+        for player in [u.user for u in Play.objects.filter(game=self.game)]:
+            try:
+                Vote.objects.create(to=guess_target, user=player)
+            except:
+                print('This was the leader vote!')
+
+        self.assertTrue(utils.game_finished(game_id=self.game.id))
+
+
+    def test_game_finished_but_it_is_not(self):
+        """
+            In this test case I'll emulate a not finished case.
+        """
+        Play.objects.create(game=self.game, user=self.secondaryUser)
+        hand = Hand.objects.create(game=self.game, leader=self.secondaryUser)
+        create_n_players(n=4, game=self.game)
+        tag = create_condition_tag(tag='WIN_CONDITION', max=10, min=1)
+        Condition.objects.create(game=self.game, tag=tag, value=10)
+
+        create_random_guesses(game=self.game)
+        
+        guess_target = HandGuess.objects.get(guess=Guess.objects.get(writer=self.user))
+
+        for player in [u.user for u in Play.objects.filter(game=self.game)]:
+            try:
+                Vote.objects.create(to=guess_target, user=player)
+            except:
+                print('This was the leader vote!')
+
+        self.assertFalse(utils.game_finished(game_id=self.game.id))
 
 
 class GameViewTest(BaseTestCase):
