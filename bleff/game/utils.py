@@ -150,3 +150,18 @@ def get_game_users(game_id: int) -> list[User]:
 def guessed_right(user: User, hand: Hand):
     hg = HandGuess.objects.get(hand=hand, guess__writer=user)
     return hg.is_correct
+
+
+def game_finished(game_id: int) -> bool:
+    """
+        Return True if a player has WIN_CONDITION.value points.
+    """
+    game = Game.objects.get(id=game_id)
+    win_condition = Condition.objects.filter(tag__tag="WIN_CONDITION", game=game)
+
+    if win_condition.exists():
+        for user in get_game_users(game_id=game_id):
+            if points_in_game(user=user, game_id=game_id) >= win_condition[0].value:
+                return True
+            
+    return False
