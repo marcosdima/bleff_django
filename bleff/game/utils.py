@@ -85,10 +85,12 @@ def there_are_guesses_to_check(game_id: int) -> bool:
 
 
 def votes_remaining(game_id: int) -> int:
-    hand_guesses = [hg.id for hg in HandGuess.objects.filter(hand=get_game_hand(game_id=game_id), is_correct=False)]
+    hand = get_game_hand(game_id=game_id)
+    hand_guesses = [hg.id for hg in HandGuess.objects.filter(hand=hand, is_correct=False)]
     users_count = Play.objects.filter(game__id=game_id).count() - 1
-
-    return users_count - Vote.objects.filter(to_id__in=hand_guesses).count()
+    users_who_guessed_right = HandGuess.objects.filter(hand=hand, is_correct=True).count()
+    
+    return users_count - users_who_guessed_right - Vote.objects.filter(to_id__in=hand_guesses).count()
 
 
 def already_vote(user: User, game_id: int) -> bool:

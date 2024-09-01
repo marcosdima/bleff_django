@@ -1048,6 +1048,24 @@ class UtilsFunctionsTest(BaseTestCase):
         self.assertEqual(utils.votes_remaining(game_id=self.game.id), 0)
 
 
+    def test_votes_remaining_with_right_guesses(self):
+        """
+            If there are right guesses, then the writers should not vote.
+        """
+        Play.objects.create(game=self.game, user=self.secondaryUser)
+        
+        hand = Hand.objects.create(game=self.game, word=self.word)
+
+        content = 'aaaaaaaaaaaaaaaaaaaaaaaaa'
+        guess = Guess.objects.create(content=content, writer=self.user, hand=hand)
+
+        hg = HandGuess.objects.get(hand=hand, guess=guess)
+        hg.is_correct = True
+        hg.save()
+
+        self.assertEqual(utils.votes_remaining(game_id=self.game.id), 0)
+
+
     def test_already_vote(self):
         '''
             This function should return True if user already vote.
