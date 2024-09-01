@@ -30,7 +30,12 @@
                 {% endfor %}
             </fieldset>
         <hr>
-        {% if not hand.game.creator or hand.game.creator.id == user.id %}
+        {% if hand.game.finished_at %}
+            <form action="{% url 'game:index' %}" method="get">
+                {% csrf_token %}
+                <input class="button" type="submit" value="Return">
+            </form>
+        {% elif not hand.game.creator or hand.game.creator.id == user.id %}
             <form action="{% url 'game:start_game' hand.game.id %}" method="post">
                 {% csrf_token %}
                 <input class="button" type="submit" value="Next Hand">

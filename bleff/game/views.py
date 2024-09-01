@@ -103,6 +103,10 @@ class IndexView(generic.ListView):
     template_name = "game/index.html"
 
 
+    def get_queryset(self, **kwargs):
+        return Game.objects.filter(finished_at__isnull=True)
+
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
