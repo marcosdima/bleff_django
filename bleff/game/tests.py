@@ -1140,7 +1140,7 @@ class UtilsFunctionsTest(BaseTestCase):
             It should return True if the wind condition values was reached by a player. In this test case I'll emulate that.
         """
         Play.objects.create(game=self.game, user=self.secondaryUser)
-        hand = Hand.objects.create(game=self.game, leader=self.secondaryUser)
+        Hand.objects.create(game=self.game, leader=self.secondaryUser)
         create_n_players(n=4, game=self.game)
         tag = create_condition_tag(tag='WIN_CONDITION', max=10, min=1)
         Condition.objects.create(game=self.game, tag=tag, value=4)
@@ -1163,7 +1163,7 @@ class UtilsFunctionsTest(BaseTestCase):
             In this test case I'll emulate a not finished case.
         """
         Play.objects.create(game=self.game, user=self.secondaryUser)
-        hand = Hand.objects.create(game=self.game, leader=self.secondaryUser)
+        Hand.objects.create(game=self.game, leader=self.secondaryUser)
         create_n_players(n=4, game=self.game)
         tag = create_condition_tag(tag='WIN_CONDITION', max=10, min=1)
         Condition.objects.create(game=self.game, tag=tag, value=10)
@@ -1746,6 +1746,20 @@ class VoteViewTest(BaseTestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('game:hand_detail', args=[self.hand.id]))
         self.assertEqual(Vote.objects.all().count(), 0)
+
+
+    def test_vote_and_finish_a_hand(self):
+        '''
+            When the last vote is created and the conditions are met, then the game ends.
+        '''
+        tag = create_condition_tag(tag='WIN_CONDITION', max=10, min=1)
+        Condition.objects.create(game=self.game, tag=tag, value=1)
+
+        login_secondary_user(self)
+        response = self.client.post(path=reverse('game:vote', args=[self.game.id]), data={'guess': self.secondary_guess.id})
+        
+        self.assertEqual(response.url, reverse('game:hand_detail', args=[self.hand.id]))
+        self.assertNotEqual(Game.objects.all()[0].finished_at, None)
 
 
 class PointsFunctionTest(BaseTestCase):
