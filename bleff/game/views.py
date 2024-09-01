@@ -382,6 +382,7 @@ def hand_detail(request, hand_id):
         'votes': Vote.objects.filter(to_id__in=hand_guesses),
         'guesses': guesses,
         'game_id': hand.game.id,
+        'word': Meaning.objects.get(word=hand.word, language=hand.game.idiom).word_translation,
         'points': [{'user': user, 'value': points_in_game(user=user, game_id=game.id)} for user in get_game_users(game_id=game.id)]
     }
 

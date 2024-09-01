@@ -15,7 +15,7 @@
             <fieldset>
                 {% for guess in guesses %}
                     <div>
-                        <label>{{ hand.word.word }} guess: '{{ guess.content }}' by {{ guess.writer }}. Votes: {{ guess.votes }}</label>
+                        <label>{{ word }} guess: '{{ guess.content }}' by {{ guess.writer }}. Votes: {{ guess.votes }}</label>
                     </div>
                 {% endfor %}
             </fieldset>
