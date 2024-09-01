@@ -23,7 +23,8 @@ from .utils import (
     last_hand,
     points_in_game,
     get_game_users,
-    guessed_right
+    guessed_right,
+    game_finished
 )
 from .decorators import play_required, leader_required, conditions_met
 
@@ -337,28 +338,33 @@ def vote(request, game_id):
     guess_hand = get_object_or_404(HandGuess, guess=guess)
 
     vote = create_or_none(model=Vote, fields={'to': guess_hand, 'user':request.user})
+
+    if not vote:
+        return handle_redirection(request=request)
+
     hand = get_game_hand(game_id=game_id)
 
-
     # TODO: and hand... wierd.
-    if votes_remaining(game_id=game_id) == 0 and hand:
+    if votes_remaining(game_id=game_id) == 0:
         hand.end()
-    
-    # WebSocket connection...
-    if vote and hand:
-        channel_layer = get_channel_layer()
-        if not hand.finished_at:
-            ws_event({
-                'type': 'new_vote',
-                'new_vote': {
-                    'content': guess.content,
-                    'votant': request.user.username
-                }
-            }, game_id)
-        else:
-            ws_event({'type': 'hand_finished'}, game_id)
 
-    return handle_redirection(request=request)
+        if game_finished(game_id=game_id):
+            game = Game.objects.get(id=game_id)
+            game.end()
+            
+    # WebSocket connection...
+    if not hand.finished_at:
+        ws_event({
+            'type': 'new_vote',
+            'new_vote': {
+                'content': guess.content,
+                'votant': request.user.username
+            }
+        }, game_id)
+    else:
+        ws_event({'type': 'hand_finished'}, game_id)
+
+    return HttpResponseRedirect(reverse("game:hand_detail", args=(hand.id,)))
 
 
 @require_GET
